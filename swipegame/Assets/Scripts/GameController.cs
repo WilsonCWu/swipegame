@@ -79,7 +79,12 @@ class GameState
 
     public override string ToString()
     {
-        string result = "Deck: ";
+        string result = "Current Card: " + curCard.ToString() + ", ";
+        result += "\nSelected Cards: ";
+        foreach(Card card in selectedCards){
+            result += card.ToString() + ", ";
+        }
+        result += "\nDeck: ";
         foreach (Card card in deck)
         {
             result += card.ToString() + ", ";
@@ -88,10 +93,6 @@ class GameState
         foreach (Card card in drawPile)
         {
             result += card.ToString() + ", ";
-        }
-        result += "\nCurrent Card: " + curCard.ToString() + ", ";
-        foreach(Card card in selectedCards){
-            result += "\nSelected Card: " + card.ToString() + ", ";
         }
         return result;
     }
