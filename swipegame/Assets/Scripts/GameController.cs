@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.Assertions;
+using System.Linq;
 
 class GameState
 {
@@ -10,6 +11,7 @@ class GameState
     private List<Card> drawPile;
     private Card curCard;
     private List<Card> selectedCards;
+    private int discardsLeft;
 
     public Card CurCard
     {
@@ -23,6 +25,10 @@ class GameState
     {
         get { return drawPile; }
     }
+    public int DiscardsLeft
+    {
+        get { return discardsLeft; }
+    }
 
     public GameState()
     {
@@ -30,6 +36,14 @@ class GameState
         drawPile = new List<Card>(deck);
         ShuffleDrawPile();
         selectedCards = new List<Card>();
+    }
+    public void Discard(){
+        Assert.IsTrue(discardsLeft > 0);
+        discardsLeft--;
+        DrawCard();
+    }
+    public void AddDiscards(int numDiscards){
+        discardsLeft += numDiscards;
     }
 
     public void DrawCard()
@@ -199,6 +213,11 @@ public class GameController : MonoBehaviour
     public TextMeshProUGUI cardsLeftText;
     public TextMeshProUGUI drawPileContentsText;
     public TextMeshProUGUI countsLeftText;
+    public TextMeshProUGUI discardsLeftText;
+    public int relicNumDrawSeeable;
+    public int relicInitialDiscards;
+    public int relicDiscardsGainedPerSubmit;
+    public int relicDiscardsGainedPerSelect;
     private GameState gameState;
 
 
@@ -215,8 +234,16 @@ public class GameController : MonoBehaviour
         }
         cardsLeftText.text = "Cards Left: " + gameState.DrawPile.Count;
         // update draw pile contents in sorted order. 
+        // show the relicNumDrawSeeable number of cards, then show rest.
+        // Note that we draw from the back of the draw pile
         drawPileContentsText.text = "";
         List<Card> sortedDrawPile = new List<Card>(gameState.DrawPile);
+        sortedDrawPile.Reverse();
+        for (int i = 0; i < relicNumDrawSeeable && i < sortedDrawPile.Count; i++)
+        {
+            drawPileContentsText.text += sortedDrawPile[i].ToString() + ", ";
+        }
+        sortedDrawPile.RemoveRange(0, Mathf.Min(relicNumDrawSeeable, sortedDrawPile.Count));
         sortedDrawPile.Sort((a, b) =>
         {
             int rankComparison = a.Rank.CompareTo(b.Rank);
@@ -256,7 +283,7 @@ public class GameController : MonoBehaviour
             }
             countsLeftText.text += Card.SuitToString(suit) + ": " + count + "\n";
         }
-        
+        discardsLeftText.text = "Discards Left: " + gameState.DiscardsLeft;
     }
     // Start is called before the first frame update
     void Start()
@@ -264,6 +291,7 @@ public class GameController : MonoBehaviour
         Assert.IsTrue(selectedCardTexts.Length == 7);
         gameState = new GameState();
         gameState.DrawCard();
+        gameState.AddDiscards(relicInitialDiscards);
         UpdateUI();
     }
 
@@ -271,25 +299,27 @@ public class GameController : MonoBehaviour
     void Update()
     {
         // input
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        if (Input.GetKeyDown(KeyCode.LeftArrow) && gameState.DiscardsLeft > 0)
         {
-            gameState.DrawCard();
+            gameState.Discard();
             UpdateUI();
         }
         if (Input.GetKeyDown(KeyCode.RightArrow))
         {
             gameState.SelectCurCard();
             gameState.DrawCard();
+            gameState.AddDiscards(relicDiscardsGainedPerSelect);
             UpdateUI();
         }
         // If full, evaluate hand and flush selected cards
-        if (gameState.SelectedCards.Count == 7 || Input.GetKeyDown(KeyCode.UpArrow))
+        if (gameState.SelectedCards.Count == 7 || (Input.GetKeyDown(KeyCode.UpArrow) && gameState.SelectedCards.Count > 0))
         {
             // Evaluate hand
             Debug.Log("TODO: Evaluate hand");
             Debug.Log(gameState.ToString());
             // Flush selected cards
             gameState.ClearSelectedCards();
+            gameState.AddDiscards(relicDiscardsGainedPerSubmit);
             UpdateUI();
         }
     }
