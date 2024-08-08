@@ -26,6 +26,12 @@ class GameState
     private List<Card> selectedCards;
     private int discardsLeft;
     private int flopSize;
+    private int points;
+
+    public int Points
+    {
+        get { return points; }
+    }
 
     public Card CurCard
     {
@@ -353,6 +359,85 @@ class GameState
         }
         return new Tuple<bool, List<Card>>(false, new List<Card>());
     }
+    public void EvaluateAndUpdatePoints(){
+        // score = base points * handType multiplier
+        // base points scale off of handType and cards in hand
+        // multiplier scales off of handType
+        Tuple<HandType, List<Card>> hand = EvaluateHand();
+        int basePoints = 0;
+        switch(hand.Item1){
+            case HandType.HighCard:
+                basePoints = 5;
+                break;
+            case HandType.Pair:
+                basePoints = 10;
+                break;
+            case HandType.TwoPair:
+                basePoints = 20;
+                break;
+            case HandType.ThreeOfAKind:
+                basePoints = 30;
+                break;
+            case HandType.Straight:
+                basePoints = 30;
+                break;
+            case HandType.Flush:
+                basePoints = 35;
+                break;
+            case HandType.FullHouse:
+                basePoints = 40;
+                break;
+            case HandType.FourOfAKind:
+                basePoints = 60;
+                break;
+            case HandType.StraightFlush:
+                basePoints = 100;
+                break;
+            case HandType.RoyalFlush:
+                basePoints = 200;
+                break;
+        }
+        int baseCardPoints = 0;
+        foreach(Card card in hand.Item2){
+            baseCardPoints += (int)card.Rank;
+        }
+        int multiplier = 1;
+        switch(hand.Item1){
+            case HandType.HighCard:
+                multiplier = 1;
+                break;
+            case HandType.Pair:
+                multiplier = 2;
+                break;
+            case HandType.TwoPair:
+                multiplier = 2;
+                break;
+            case HandType.ThreeOfAKind:
+                multiplier = 3;
+                break;
+            case HandType.Straight:
+                multiplier = 4;
+                break;
+            case HandType.Flush:
+                multiplier = 4;
+                break;
+            case HandType.FullHouse:
+                multiplier = 4;
+                break;
+            case HandType.FourOfAKind:
+                multiplier = 7;
+                break;
+            case HandType.StraightFlush:
+                multiplier = 8;
+                break;
+            case HandType.RoyalFlush:
+                multiplier = 10;
+                break;
+        }
+        points += (basePoints + baseCardPoints) * multiplier;
+        Debug.Log("Added " + (basePoints + baseCardPoints) * multiplier + " points. basePoints=" + basePoints + ", baseCardPoints=" + baseCardPoints + ", multiplier=" + multiplier);
+    }
+
     public Tuple<HandType, List<Card>> EvaluateHand(){
         // same but sorted
         Tuple<HandType, List<Card>> result = _EvaluateHand();
@@ -557,6 +642,7 @@ public class GameController : MonoBehaviour
     public TextMeshProUGUI countsLeftText;
     public TextMeshProUGUI discardsLeftText;
     public TextMeshProUGUI handTypeText;
+    public TextMeshProUGUI pointsText;
     public int relicFlopSize;
     public int relicNumDrawSeeable;
     public int relicInitialDiscards;
@@ -645,6 +731,7 @@ public class GameController : MonoBehaviour
             countsLeftText.text += Card.SuitToString(suit) + ": " + count + "\n";
         }
         discardsLeftText.text = "Discards Left: " + gameState.DiscardsLeft;
+        pointsText.text = "Points: " + gameState.Points;
     }
     // Start is called before the first frame update
     void Start()
@@ -679,6 +766,7 @@ public class GameController : MonoBehaviour
             Debug.Log(gameState.ToString());
             Debug.Log(Utils.HandToString(gameState.EvaluateHand()));
             // Flush selected cards
+            gameState.EvaluateAndUpdatePoints();
             gameState.ClearSelectedCards();
             gameState.AddDiscards(relicDiscardsGainedPerSubmit);
             gameState.GenerateFlop(relicFlopSize);
