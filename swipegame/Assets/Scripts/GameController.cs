@@ -699,7 +699,7 @@ public class GameController : MonoBehaviour
         sortedDrawPile.Reverse();
         for (int i = 0; i < relicNumDrawSeeable && i < sortedDrawPile.Count; i++)
         {
-            drawPileContentsText.text += sortedDrawPile[i].ToString() + ", ";
+            drawPileContentsText.text += "<color=yellow>" + sortedDrawPile[i].ToString() + "</color>, ";
         }
         sortedDrawPile.RemoveRange(0, Mathf.Min(relicNumDrawSeeable, sortedDrawPile.Count));
         sortedDrawPile.Sort((a, b) =>
