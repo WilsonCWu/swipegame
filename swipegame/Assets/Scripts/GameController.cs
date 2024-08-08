@@ -27,6 +27,12 @@ class GameState
     private int discardsLeft;
     private int flopSize;
     private int points;
+    private int submitsLeft;
+
+    public int SubmitsLeft
+    {
+        get { return submitsLeft; }
+    }
 
     public int Points
     {
@@ -50,9 +56,10 @@ class GameState
         get { return discardsLeft; }
     }
 
-    public GameState(int flopSize)
+    public GameState(int flopSize, int submitsLeft)
     {
         this.flopSize = flopSize;
+        this.submitsLeft = submitsLeft;
         InitializeDeck();
         drawPile = new List<Card>(deck);
         ShuffleDrawPile();
@@ -360,6 +367,8 @@ class GameState
         return new Tuple<bool, List<Card>>(false, new List<Card>());
     }
     public void EvaluateAndUpdatePoints(){
+        Assert.IsTrue(submitsLeft > 0);
+        submitsLeft--;
         // score = base points * handType multiplier
         // base points scale off of handType and cards in hand
         // multiplier scales off of handType
@@ -643,9 +652,11 @@ public class GameController : MonoBehaviour
     public TextMeshProUGUI discardsLeftText;
     public TextMeshProUGUI handTypeText;
     public TextMeshProUGUI pointsText;
+    public TextMeshProUGUI submitsLeftText;
     public int relicFlopSize;
     public int relicNumDrawSeeable;
     public int relicInitialDiscards;
+    public int relicSubmitLimit;
     public int relicDiscardsGainedPerSubmit;
     public int relicDiscardsGainedPerSelect;
     private GameState gameState;
@@ -732,27 +743,35 @@ public class GameController : MonoBehaviour
         }
         discardsLeftText.text = "Discards Left: " + gameState.DiscardsLeft;
         pointsText.text = "Points: " + gameState.Points;
+        submitsLeftText.text = "Submits Left: " + gameState.SubmitsLeft;
+    }
+    void ResetGame(){
+        gameState = new GameState(relicFlopSize, relicSubmitLimit);
+        gameState.DrawCard();
+        gameState.AddDiscards(relicInitialDiscards);
+        UpdateUI();
     }
     // Start is called before the first frame update
     void Start()
     {
         Assert.IsTrue(selectedCardTexts.Length == 7);
-        gameState = new GameState(relicFlopSize);
-        gameState.DrawCard();
-        gameState.AddDiscards(relicInitialDiscards);
-        UpdateUI();
+        ResetGame();
     }
 
     // Update is called once per frame
     void Update()
     {
         // input
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            ResetGame();
+        }
         if (Input.GetKeyDown(KeyCode.LeftArrow) && gameState.DiscardsLeft > 0)
         {
             gameState.Discard();
             UpdateUI();
         }
-        if (Input.GetKeyDown(KeyCode.RightArrow))
+        if (Input.GetKeyDown(KeyCode.RightArrow) && gameState.SelectedCards.Count < 7)
         {
             gameState.SelectCurCard();
             gameState.DrawCard();
@@ -760,7 +779,7 @@ public class GameController : MonoBehaviour
             UpdateUI();
         }
         // If full, evaluate hand and flush selected cards
-        if (gameState.SelectedCards.Count == 7 || (Input.GetKeyDown(KeyCode.UpArrow) && gameState.SelectedCards.Count > 0))
+        if ((gameState.SelectedCards.Count == 7 || (Input.GetKeyDown(KeyCode.UpArrow) && gameState.SelectedCards.Count > 0)) && gameState.SubmitsLeft > 0)
         {
             // Evaluate hand
             Debug.Log(gameState.ToString());
