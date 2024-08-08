@@ -506,7 +506,7 @@ enum Suit
 
 enum Rank
 {
-    Ace = 1,
+    Ace = 14,
     Two = 2,
     Three = 3,
     Four = 4,
@@ -543,6 +543,7 @@ public class GameController : MonoBehaviour
     public TextMeshProUGUI drawPileContentsText;
     public TextMeshProUGUI countsLeftText;
     public TextMeshProUGUI discardsLeftText;
+    public TextMeshProUGUI handTypeText;
     public int relicNumDrawSeeable;
     public int relicInitialDiscards;
     public int relicDiscardsGainedPerSubmit;
@@ -553,9 +554,26 @@ public class GameController : MonoBehaviour
     void UpdateUI()
     {
         curCardText.text = gameState.CurCard.ToString();
-        for (int i = 0; i < gameState.SelectedCards.Count; i++)
+        if (gameState.SelectedCards.Count != 0)
         {
-            selectedCardTexts[i].text = gameState.SelectedCards[i].ToString();
+            Tuple<HandType, List<Card>> bestHand = gameState.EvaluateHand();
+            for (int i = 0; i < gameState.SelectedCards.Count; i++)
+            {
+                // if selectedCard is in bestHand, remove it from bestHand and color it
+                if (bestHand.Item2.Contains(gameState.SelectedCards[i]))
+                {
+                    selectedCardTexts[i].text = "<color=green>" + gameState.SelectedCards[i].ToString() + "</color>";
+                    bestHand.Item2.Remove(gameState.SelectedCards[i]);
+                }
+                else
+                {
+                    selectedCardTexts[i].text = gameState.SelectedCards[i].ToString();
+                }
+            }
+            handTypeText.text = bestHand.Item1.ToString();
+        }
+        else{
+            handTypeText.text = "";
         }
         for (int i = gameState.SelectedCards.Count; i < selectedCardTexts.Length; i++)
         {
@@ -638,15 +656,14 @@ public class GameController : MonoBehaviour
             gameState.SelectCurCard();
             gameState.DrawCard();
             gameState.AddDiscards(relicDiscardsGainedPerSelect);
-            Debug.Log(Utils.HandToString(gameState.EvaluateHand()));
             UpdateUI();
         }
         // If full, evaluate hand and flush selected cards
         if (gameState.SelectedCards.Count == 7 || (Input.GetKeyDown(KeyCode.UpArrow) && gameState.SelectedCards.Count > 0))
         {
             // Evaluate hand
-            Debug.Log("TODO: Evaluate hand");
             Debug.Log(gameState.ToString());
+            Debug.Log(Utils.HandToString(gameState.EvaluateHand()));
             // Flush selected cards
             gameState.ClearSelectedCards();
             gameState.AddDiscards(relicDiscardsGainedPerSubmit);
