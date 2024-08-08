@@ -25,6 +25,7 @@ class GameState
     private Card curCard;
     private List<Card> selectedCards;
     private int discardsLeft;
+    private int flopSize;
 
     public Card CurCard
     {
@@ -43,12 +44,14 @@ class GameState
         get { return discardsLeft; }
     }
 
-    public GameState()
+    public GameState(int flopSize)
     {
+        this.flopSize = flopSize;
         InitializeDeck();
         drawPile = new List<Card>(deck);
         ShuffleDrawPile();
         selectedCards = new List<Card>();
+        GenerateFlop(flopSize);
     }
     public void Discard(){
         Assert.IsTrue(discardsLeft > 0);
@@ -79,6 +82,15 @@ class GameState
         selectedCards.Clear();
     }
 
+    public void GenerateFlop(int flopSize){
+        // Generate a flop of size flopSize. Generate a random card, not from the draw pile
+        // and add it to the selected cards
+        for (int i = 0; i < flopSize; i++)
+        {
+            selectedCards.Add(deck[UnityEngine.Random.Range(0, deck.Count)]);
+        }
+    }
+
     private void ShuffleDrawPile()
     {
         // Implement the logic to shuffle the drawPile list here
@@ -103,6 +115,7 @@ class GameState
             }
         }
     }
+    
 
     public override string ToString()
     {
@@ -544,6 +557,7 @@ public class GameController : MonoBehaviour
     public TextMeshProUGUI countsLeftText;
     public TextMeshProUGUI discardsLeftText;
     public TextMeshProUGUI handTypeText;
+    public int relicFlopSize;
     public int relicNumDrawSeeable;
     public int relicInitialDiscards;
     public int relicDiscardsGainedPerSubmit;
@@ -636,7 +650,7 @@ public class GameController : MonoBehaviour
     void Start()
     {
         Assert.IsTrue(selectedCardTexts.Length == 7);
-        gameState = new GameState();
+        gameState = new GameState(relicFlopSize);
         gameState.DrawCard();
         gameState.AddDiscards(relicInitialDiscards);
         UpdateUI();
@@ -667,6 +681,7 @@ public class GameController : MonoBehaviour
             // Flush selected cards
             gameState.ClearSelectedCards();
             gameState.AddDiscards(relicDiscardsGainedPerSubmit);
+            gameState.GenerateFlop(relicFlopSize);
             UpdateUI();
         }
     }
