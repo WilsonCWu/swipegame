@@ -988,10 +988,10 @@ MonoBehaviour:
   drawPileContentsText: {fileID: 659953635}
   countsLeftText: {fileID: 1714663916}
   discardsLeftText: {fileID: 151949744}
-  relicNumDrawSeeable: 3
+  relicNumDrawSeeable: 1
   relicInitialDiscards: 3
-  relicDiscardsGainedPerSubmit: 1
-  relicDiscardsGainedPerSelect: 1
+  relicDiscardsGainedPerSubmit: 3
+  relicDiscardsGainedPerSelect: 0
 --- !u!1 &1125847954
 GameObject:
   m_ObjectHideFlags: 0

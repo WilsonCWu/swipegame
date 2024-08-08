@@ -4,7 +4,20 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.Assertions;
 using System.Linq;
+using System;
 
+class Utils{
+    public static string CardsToString(List<Card> cards){
+        string result = "";
+        foreach(Card card in cards){
+            result += card.ToString() + ", ";
+        }
+        return result;
+    }
+    public static string HandToString(Tuple<HandType, List<Card>> hand){
+        return hand.Item1.ToString() + ": " + CardsToString(hand.Item2);
+    }
+}
 class GameState
 {
     private List<Card> deck;
@@ -110,9 +123,300 @@ class GameState
         }
         return result;
     }
+
+    public static Tuple<bool, List<Card>> containsRoyalFlush(List<Card> cards){
+        // Returns a tuple of whether the cards contain a royal flush and the cards that form the royal flush
+        // cards can contain any number of cards
+        // Royal flush is a straight flush from 10 to Ace
+
+        // use containsStraightFlush
+        Tuple<bool, List<Card>> straightFlush = containsStraightFlush(cards);
+        if (!straightFlush.Item1)
+        {
+            return new Tuple<bool, List<Card>>(false, new List<Card>());
+        }
+        List<Card> straightFlushCards = straightFlush.Item2;
+        if (straightFlushCards[0].Rank == Rank.Ace && straightFlushCards[straightFlushCards.Count - 1].Rank == Rank.Ten)
+        {
+            return new Tuple<bool, List<Card>>(true, straightFlushCards);
+        }
+        return new Tuple<bool, List<Card>>(false, new List<Card>());
+    }
+
+    public static Tuple<bool, List<Card>> containsStraightFlush(List<Card> cards){
+        // Returns a tuple of whether the cards contain a straight flush and the cards that form the straight flush
+        // cards can contain any number of cards
+        // Straight flush is a straight of 5 cards of the same suit
+        // If there are multiple straight flushes, return the highest
+
+        Dictionary<Suit, List<Card>> suitToCards = new Dictionary<Suit, List<Card>>();
+        foreach (Card card in cards)
+        {
+            if (!suitToCards.ContainsKey(card.Suit))
+            {
+                suitToCards[card.Suit] = new List<Card>();
+            }
+            suitToCards[card.Suit].Add(card);
+        }
+        foreach (List<Card> suitCards in suitToCards.Values)
+        {
+            if (suitCards.Count < 5)
+            {
+                continue;
+            }
+            Dictionary<Rank, Card> rankToCard = new Dictionary<Rank, Card>();
+            foreach (Card card in suitCards)
+            {
+                rankToCard[card.Rank] = card;
+            }
+            List<Rank> ranks = new List<Rank>(rankToCard.Keys);
+            ranks.Sort();
+            ranks.Reverse();
+            for (int i = 0; i < ranks.Count - 4; i++)
+            {
+                if (ranks[i] - ranks[i + 4] == 4)
+                {
+                    return new Tuple<bool, List<Card>>(true, new List<Card> { rankToCard[ranks[i]], rankToCard[ranks[i + 1]], rankToCard[ranks[i + 2]], rankToCard[ranks[i + 3]], rankToCard[ranks[i + 4]] });
+                }
+            }
+            // check ace low straight
+            if (rankToCard.ContainsKey(Rank.Ace) && rankToCard.ContainsKey(Rank.Two) && rankToCard.ContainsKey(Rank.Three) && rankToCard.ContainsKey(Rank.Four) && rankToCard.ContainsKey(Rank.Five))
+            {
+                return new Tuple<bool, List<Card>>(true, new List<Card> { rankToCard[Rank.Ace], rankToCard[Rank.Two], rankToCard[Rank.Three], rankToCard[Rank.Four], rankToCard[Rank.Five] });
+            }
+        }
+        return new Tuple<bool, List<Card>>(false, new List<Card>());
+    }
+
+    public static Tuple<bool, List<Card>> containsNOfAKind(List<Card> cards, int n){
+        // Returns a tuple of whether the cards contain n of a kind and the cards that form the n of a kind
+        // cards can contain any number of cards
+        // n of a kind is n cards of the same rank
+        // If there are multiple n of a kinds, return the highest
+
+        Dictionary<Rank, List<Card>> rankToCards = new Dictionary<Rank, List<Card>>();
+        foreach (Card card in cards)
+        {
+            if (!rankToCards.ContainsKey(card.Rank))
+            {
+                rankToCards[card.Rank] = new List<Card>();
+            }
+            rankToCards[card.Rank].Add(card);
+        }
+        List<Rank> ranks = new List<Rank>(rankToCards.Keys);
+        ranks.Sort();
+        ranks.Reverse();
+        foreach (Rank rank in ranks)
+        {
+            List<Card> rankCards = rankToCards[rank];
+            if (rankCards.Count >= n)
+            {
+                return new Tuple<bool, List<Card>>(true, rankCards.GetRange(0, n));
+            }
+        }
+        return new Tuple<bool, List<Card>>(false, new List<Card>());
+    }
+
+    public static Tuple<bool, List<Card>> containsFourOfAKind(List<Card> cards){
+        return containsNOfAKind(cards, 4);
+    }
+
+    public static Tuple<bool, List<Card>> containsThreeOfAKind(List<Card> cards){
+        return containsNOfAKind(cards, 3);
+    }
+    
+
+    public static Tuple<bool, List<Card>> containsTwoOfAKind(List<Card> cards){
+        return containsNOfAKind(cards, 2);
+    }
+    
+
+    public static Tuple<bool, List<Card>> containsHighCard(List<Card> cards){
+        return containsNOfAKind(cards, 1);
+    }
+
+    public static Tuple<bool, List<Card>> containsFullHouse(List<Card> cards){
+        // Returns a tuple of whether the cards contain a full house and the cards that form the full house
+        // cards can contain any number of cards
+        // Full house is a three of a kind and a pair
+        // If there are multiple full houses, return the highest
+
+        Tuple<bool, List<Card>> threeOfAKind = containsThreeOfAKind(cards);
+        if (!threeOfAKind.Item1)
+        {
+            return new Tuple<bool, List<Card>>(false, new List<Card>());
+        }
+        List<Card> threeOfAKindCards = threeOfAKind.Item2;
+        List<Card> remainingCards = new List<Card>(cards);
+        foreach (Card card in threeOfAKindCards)
+        {
+            remainingCards.Remove(card);
+        }
+        Tuple<bool, List<Card>> twoOfAKind = containsTwoOfAKind(remainingCards);
+        if (!twoOfAKind.Item1)
+        {
+            return new Tuple<bool, List<Card>>(false, new List<Card>());
+        }
+        List<Card> twoOfAKindCards = twoOfAKind.Item2;
+        return new Tuple<bool, List<Card>>(true, threeOfAKindCards.Concat(twoOfAKindCards).ToList());
+    }
+
+    public static Tuple<bool, List<Card>> containsTwoPair(List<Card> cards){
+        // Returns a tuple of whether the cards contain two pair and the cards that form the two pair
+        // cards can contain any number of cards
+        // Two pair is two pairs of cards of the same rank
+        // If there are multiple two pairs, return the highest
+
+        Tuple<bool, List<Card>> pair1 = containsTwoOfAKind(cards);
+        if (!pair1.Item1)
+        {
+            return new Tuple<bool, List<Card>>(false, new List<Card>());
+        }
+        List<Card> pair1Cards = pair1.Item2;
+        List<Card> remainingCards = new List<Card>(cards);
+        foreach (Card card in pair1Cards)
+        {
+            remainingCards.Remove(card);
+        }
+        Tuple<bool, List<Card>> pair2 = containsTwoOfAKind(remainingCards);
+        if (!pair2.Item1)
+        {
+            return new Tuple<bool, List<Card>>(false, new List<Card>());
+        }
+        List<Card> pair2Cards = pair2.Item2;
+        return new Tuple<bool, List<Card>>(true, pair1Cards.Concat(pair2Cards).ToList());
+    }
+    public static Tuple<bool, List<Card>> containsStraight(List<Card> cards){
+        // Returns a tuple of whether the cards contain a straight and the cards that form the straight
+        // cards can contain any number of cards
+        // Straight is a sequence of 5 cards of any suit
+        // If there are multiple straights, return the highest
+
+        Dictionary<Rank, Card> rankToCard = new Dictionary<Rank, Card>();
+        foreach (Card card in cards)
+        {
+            rankToCard[card.Rank] = card;
+        }
+        List<Rank> ranks = new List<Rank>(rankToCard.Keys);
+        ranks.Sort();
+        ranks.Reverse();
+        for (int i = 0; i < ranks.Count - 4; i++)
+        {
+            if (ranks[i] - ranks[i + 4] == 4)
+            {
+                return new Tuple<bool, List<Card>>(true, new List<Card> { rankToCard[ranks[i]], rankToCard[ranks[i + 1]], rankToCard[ranks[i + 2]], rankToCard[ranks[i + 3]], rankToCard[ranks[i + 4]] });
+            }
+        }
+        // check ace low straight
+        if (rankToCard.ContainsKey(Rank.Ace) && rankToCard.ContainsKey(Rank.Two) && rankToCard.ContainsKey(Rank.Three) && rankToCard.ContainsKey(Rank.Four) && rankToCard.ContainsKey(Rank.Five))
+        {
+            return new Tuple<bool, List<Card>>(true, new List<Card> { rankToCard[Rank.Ace], rankToCard[Rank.Two], rankToCard[Rank.Three], rankToCard[Rank.Four], rankToCard[Rank.Five] });
+        }
+        return new Tuple<bool, List<Card>>(false, new List<Card>());
+    }
+    public static Tuple<bool, List<Card>> containsFlush(List<Card> cards){
+        // Returns a tuple of whether the cards contain a flush and the cards that form the flush
+        // cards can contain any number of cards
+        // Flush is 5 cards of the same suit
+        // If there are multiple flushes, return the highest
+
+        Dictionary<Suit, List<Card>> suitToCards = new Dictionary<Suit, List<Card>>();
+        foreach (Card card in cards)
+        {
+            if (!suitToCards.ContainsKey(card.Suit))
+            {
+                suitToCards[card.Suit] = new List<Card>();
+            }
+            suitToCards[card.Suit].Add(card);
+        }
+        foreach (List<Card> suitCards in suitToCards.Values)
+        {
+            suitCards.Sort();
+            suitCards.Reverse();
+            if (suitCards.Count >= 5)
+            {
+                return new Tuple<bool, List<Card>>(true, suitCards.GetRange(0, 5));
+            }
+        }
+        return new Tuple<bool, List<Card>>(false, new List<Card>());
+    }
+    public Tuple<HandType, List<Card>> EvaluateHand(){
+        // same but sorted
+        Tuple<HandType, List<Card>> result = _EvaluateHand();
+        result.Item2.Sort();
+        result.Item2.Reverse();
+        return result;
+    }
+
+
+    private Tuple<HandType, List<Card>> _EvaluateHand()
+    {
+        // Returns the best hand that can be formed from the selected cards
+        // and the cards that form the hand
+        // The cards should be sorted in descending order of rank
+        // The hand should be sorted in the following order:
+        // RoyalFlush, StraightFlush, FourOfAKind, FullHouse, Flush, Straight, ThreeOfAKind, TwoPair, Pair, HighCard
+        // Unlike poker, where top 5 cards are used, we only use cards that are a part of the handtype.
+        // For example, if the hand is a pair, we only use the pair and not the other 5 cards.
+        // If there are multiple hands of the same type, tie break with the highest value cards.
+        // Otherwise, tie break by selecting first selected cards.
+        Assert.IsTrue(selectedCards.Count != 0);
+        Tuple<bool, List<Card>> royalFlush = containsRoyalFlush(selectedCards);
+        if (royalFlush.Item1)
+        {
+            return new Tuple<HandType, List<Card>>(HandType.RoyalFlush, royalFlush.Item2);
+        }
+        Tuple<bool, List<Card>> straightFlush = containsStraightFlush(selectedCards);
+        if (straightFlush.Item1)
+        {
+            return new Tuple<HandType, List<Card>>(HandType.StraightFlush, straightFlush.Item2);
+        }
+        Tuple<bool, List<Card>> fourOfAKind = containsFourOfAKind(selectedCards);
+        if (fourOfAKind.Item1)
+        {
+            return new Tuple<HandType, List<Card>>(HandType.FourOfAKind, fourOfAKind.Item2);
+        }
+        Tuple<bool, List<Card>> fullHouse = containsFullHouse(selectedCards);
+        if (fullHouse.Item1)
+        {
+            return new Tuple<HandType, List<Card>>(HandType.FullHouse, fullHouse.Item2);
+        }
+        Tuple<bool, List<Card>> flush = containsFlush(selectedCards);
+        if (flush.Item1)
+        {
+            return new Tuple<HandType, List<Card>>(HandType.Flush, flush.Item2);
+        }
+        Tuple<bool, List<Card>> straight = containsStraight(selectedCards);
+        if (straight.Item1)
+        {
+            return new Tuple<HandType, List<Card>>(HandType.Straight, straight.Item2);
+        }
+        Tuple<bool, List<Card>> threeOfAKind = containsThreeOfAKind(selectedCards);
+        if (threeOfAKind.Item1)
+        {
+            return new Tuple<HandType, List<Card>>(HandType.ThreeOfAKind, threeOfAKind.Item2);
+        }
+        Tuple<bool, List<Card>> twoPair = containsTwoPair(selectedCards);
+        if (twoPair.Item1)
+        {
+            return new Tuple<HandType, List<Card>>(HandType.TwoPair, twoPair.Item2);
+        }
+        Tuple<bool, List<Card>> pair = containsTwoOfAKind(selectedCards);
+        if (pair.Item1)
+        {
+            return new Tuple<HandType, List<Card>>(HandType.Pair, pair.Item2);
+        }
+        Tuple<bool, List<Card>> highCard = containsHighCard(selectedCards);
+        if (highCard.Item1)
+        {
+            return new Tuple<HandType, List<Card>>(HandType.HighCard, highCard.Item2);
+        }
+        Assert.IsTrue(false);
+        return new Tuple<HandType, List<Card>>(HandType.HighCard, new List<Card>());
+    }
 }
 
-class Card
+class Card : IComparable
 {
     public Suit Suit { get; }
     public Rank Rank { get; }
@@ -179,14 +483,25 @@ class Card
                 return "";
         }
     }
+
+    public int CompareTo(object obj) {
+        // Rank is more important than suit
+        Card other = (Card)obj;
+        int rankComparison = Rank.CompareTo(other.Rank);
+        if (rankComparison == 0)
+        {
+            return Suit.CompareTo(other.Suit);
+        }
+        return rankComparison;
+    }
 }
 
 enum Suit
 {
-    Spades,
-    Hearts,
-    Diamonds,
-    Clubs
+    Spades=4,
+    Hearts=3,
+    Diamonds=2,
+    Clubs=1,
 }
 
 enum Rank
@@ -204,6 +519,20 @@ enum Rank
     Jack = 11,
     Queen = 12,
     King = 13,
+}
+
+enum HandType
+{
+    HighCard,
+    Pair,
+    TwoPair,
+    ThreeOfAKind,
+    Straight,
+    Flush,
+    FullHouse,
+    FourOfAKind,
+    StraightFlush,
+    RoyalFlush
 }
 
 public class GameController : MonoBehaviour
@@ -309,6 +638,7 @@ public class GameController : MonoBehaviour
             gameState.SelectCurCard();
             gameState.DrawCard();
             gameState.AddDiscards(relicDiscardsGainedPerSelect);
+            Debug.Log(Utils.HandToString(gameState.EvaluateHand()));
             UpdateUI();
         }
         // If full, evaluate hand and flush selected cards
