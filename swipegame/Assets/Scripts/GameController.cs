@@ -28,6 +28,7 @@ class GameState
     private int flopSize;
     private int points;
     private int submitsLeft;
+    private StartingDeckType startingDeckType;
 
     public int SubmitsLeft
     {
@@ -56,10 +57,11 @@ class GameState
         get { return discardsLeft; }
     }
 
-    public GameState(int flopSize, int submitsLeft)
+    public GameState(int flopSize, int submitsLeft, StartingDeckType startingDeckType)
     {
         this.flopSize = flopSize;
         this.submitsLeft = submitsLeft;
+        this.startingDeckType = startingDeckType;
         InitializeDeck();
         drawPile = new List<Card>(deck);
         ShuffleDrawPile();
@@ -120,12 +122,60 @@ class GameState
     private void InitializeDeck()
     {
         deck = new List<Card>();
-        foreach (Suit suit in System.Enum.GetValues(typeof(Suit)))
+        switch (startingDeckType)
         {
-            foreach (Rank rank in System.Enum.GetValues(typeof(Rank)))
-            {
-                deck.Add(new Card(suit, rank));
-            }
+            case StartingDeckType.Standard:
+                foreach (Suit suit in System.Enum.GetValues(typeof(Suit)))
+                {
+                    foreach (Rank rank in System.Enum.GetValues(typeof(Rank)))
+                    {
+                        deck.Add(new Card(suit, rank));
+                    }
+                }
+                break;
+            case StartingDeckType.NoFaceCards:
+                foreach (Suit suit in System.Enum.GetValues(typeof(Suit)))
+                {
+                    foreach (Rank rank in System.Enum.GetValues(typeof(Rank)))
+                    {
+                        if (rank < Rank.Jack)
+                        {
+                            deck.Add(new Card(suit, rank));
+                        }
+                    }
+                }
+                break;
+            case StartingDeckType.OnlyRedCards:
+                foreach (Suit suit in System.Enum.GetValues(typeof(Suit)))
+                {
+                    foreach (Rank rank in System.Enum.GetValues(typeof(Rank)))
+                    {
+                        if (suit == Suit.Hearts || suit == Suit.Diamonds)
+                        {
+                            deck.Add(new Card(suit, rank));
+                            deck.Add(new Card(suit, rank));
+                        }
+                    }
+                }
+                break;
+            case StartingDeckType.DoubleCardsBelow7:
+                foreach (Suit suit in System.Enum.GetValues(typeof(Suit)))
+                {
+                    foreach (Rank rank in System.Enum.GetValues(typeof(Rank)))
+                    {
+                        deck.Add(new Card(suit, rank));
+                        if (rank <= Rank.Seven)
+                        {
+                            deck.Add(new Card(suit, rank));
+                        }
+                    }
+                }
+                break;
+            case StartingDeckType.Random:
+                for(int i = 0; i < 52; i++){
+                    deck.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), (Rank)UnityEngine.Random.Range(2, 15)));
+                }
+                break;
         }
     }
     
@@ -642,6 +692,15 @@ enum HandType
     RoyalFlush
 }
 
+public enum StartingDeckType
+{
+    Standard,
+    NoFaceCards,
+    OnlyRedCards,
+    DoubleCardsBelow7,
+    Random,
+}
+
 public class GameController : MonoBehaviour
 {
     public TextMeshProUGUI curCardText;
@@ -653,6 +712,7 @@ public class GameController : MonoBehaviour
     public TextMeshProUGUI handTypeText;
     public TextMeshProUGUI pointsText;
     public TextMeshProUGUI submitsLeftText;
+    public StartingDeckType startingDeckType;
     public int relicFlopSize;
     public int relicNumDrawSeeable;
     public int relicInitialDiscards;
@@ -746,7 +806,7 @@ public class GameController : MonoBehaviour
         submitsLeftText.text = "Submits Left: " + gameState.SubmitsLeft;
     }
     void ResetGame(){
-        gameState = new GameState(relicFlopSize, relicSubmitLimit);
+        gameState = new GameState(relicFlopSize, relicSubmitLimit, startingDeckType);
         gameState.DrawCard();
         gameState.AddDiscards(relicInitialDiscards);
         UpdateUI();

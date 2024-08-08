@@ -1259,6 +1259,7 @@ MonoBehaviour:
   handTypeText: {fileID: 1205893659}
   pointsText: {fileID: 593018874}
   submitsLeftText: {fileID: 447276312}
+  startingDeckType: 0
   relicFlopSize: 3
   relicNumDrawSeeable: 1
   relicInitialDiscards: 3
