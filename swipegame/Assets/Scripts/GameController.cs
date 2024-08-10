@@ -17,115 +17,9 @@ public class Utils{
     public static string HandToString(Tuple<HandType, List<Card>> hand){
         return hand.Item1.ToString() + ": " + CardsToString(hand.Item2);
     }
-}
-class GameState
-{
-    private List<Card> deck;
-    private List<Card> drawPile;
-    private Card curCard;
-    private List<Card> selectedCards;
-    private int discardsLeft;
-    private int flopSize;
-    private int points;
-    private int submitsLeft;
-    private StartingDeckType startingDeckType;
-
-    public int SubmitsLeft
+    public static List<Card> InitializeDeck(StartingDeckType startingDeckType)
     {
-        get { return submitsLeft; }
-    }
-
-    public int Points
-    {
-        get { return points; }
-    }
-
-    public Card CurCard
-    {
-        get { return curCard; }
-    }
-    public List<Card> SelectedCards
-    {
-        get { return selectedCards; }
-    }
-    public List<Card> DrawPile
-    {
-        get { return drawPile; }
-    }
-    public int DiscardsLeft
-    {
-        get { return discardsLeft; }
-    }
-    public List<Card> Deck
-    {
-        get { return deck; }
-    }
-
-    public GameState(int flopSize, int submitsLeft, StartingDeckType startingDeckType)
-    {
-        this.flopSize = flopSize;
-        this.submitsLeft = submitsLeft;
-        this.startingDeckType = startingDeckType;
-        InitializeDeck();
-        drawPile = new List<Card>(deck);
-        ShuffleDrawPile();
-        selectedCards = new List<Card>();
-        GenerateFlop(flopSize);
-    }
-    public void Discard(){
-        Assert.IsTrue(discardsLeft > 0);
-        discardsLeft--;
-        DrawCard();
-    }
-    public void AddDiscards(int numDiscards){
-        discardsLeft += numDiscards;
-    }
-
-    public void DrawCard()
-    {
-        if (drawPile.Count == 0)
-        {
-            Debug.Log("reshuffling the draw pile");
-            drawPile = new List<Card>(deck);
-            ShuffleDrawPile();
-        }
-        curCard = drawPile[drawPile.Count - 1];
-        drawPile.RemoveAt(drawPile.Count - 1);
-    }
-
-    public void SelectCurCard(){
-        selectedCards.Add(curCard);
-    }
-
-    public void ClearSelectedCards(){
-        selectedCards.Clear();
-    }
-
-    public void GenerateFlop(int flopSize){
-        // Generate a flop of size flopSize. Generate a random card, not from the draw pile
-        // and add it to the selected cards
-        for (int i = 0; i < flopSize; i++)
-        {
-            selectedCards.Add(deck[UnityEngine.Random.Range(0, deck.Count)]);
-        }
-    }
-
-    private void ShuffleDrawPile()
-    {
-        // Implement the logic to shuffle the drawPile list here
-        // You can use the Fisher-Yates shuffle algorithm
-        for (int i = drawPile.Count - 1; i > 0; i--)
-        {
-            int randomIndex = UnityEngine.Random.Range(0, i + 1);
-            Card temp = drawPile[i];
-            drawPile[i] = drawPile[randomIndex];
-            drawPile[randomIndex] = temp;
-        }
-    }
-
-    private void InitializeDeck()
-    {
-        deck = new List<Card>();
+        List<Card> deck = new List<Card>();
         switch (startingDeckType)
         {
             case StartingDeckType.Standard:
@@ -180,6 +74,111 @@ class GameState
                     deck.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), (Rank)UnityEngine.Random.Range(2, 15)));
                 }
                 break;
+        }
+        return deck;
+    }
+}
+class GameState
+{
+    private List<Card> deck;
+    private List<Card> drawPile;
+    private Card curCard;
+    private List<Card> selectedCards;
+    private int discardsLeft;
+    private int flopSize;
+    private int points;
+    private int submitsLeft;
+    private StartingDeckType startingDeckType;
+
+    public int SubmitsLeft
+    {
+        get { return submitsLeft; }
+    }
+
+    public int Points
+    {
+        get { return points; }
+    }
+
+    public Card CurCard
+    {
+        get { return curCard; }
+    }
+    public List<Card> SelectedCards
+    {
+        get { return selectedCards; }
+    }
+    public List<Card> DrawPile
+    {
+        get { return drawPile; }
+    }
+    public int DiscardsLeft
+    {
+        get { return discardsLeft; }
+    }
+    public List<Card> Deck
+    {
+        get { return deck; }
+    }
+
+    public GameState(int flopSize, int submitsLeft, List<Card> deck)
+    {
+        this.flopSize = flopSize;
+        this.submitsLeft = submitsLeft;
+        this.deck = deck;
+        drawPile = new List<Card>(deck);
+        ShuffleDrawPile();
+        selectedCards = new List<Card>();
+        GenerateFlop(flopSize);
+    }
+    public void Discard(){
+        Assert.IsTrue(discardsLeft > 0);
+        discardsLeft--;
+        DrawCard();
+    }
+    public void AddDiscards(int numDiscards){
+        discardsLeft += numDiscards;
+    }
+
+    public void DrawCard()
+    {
+        if (drawPile.Count == 0)
+        {
+            Debug.Log("reshuffling the draw pile");
+            drawPile = new List<Card>(deck);
+            ShuffleDrawPile();
+        }
+        curCard = drawPile[drawPile.Count - 1];
+        drawPile.RemoveAt(drawPile.Count - 1);
+    }
+
+    public void SelectCurCard(){
+        selectedCards.Add(curCard);
+    }
+
+    public void ClearSelectedCards(){
+        selectedCards.Clear();
+    }
+
+    public void GenerateFlop(int flopSize){
+        // Generate a flop of size flopSize. Generate a random card, not from the draw pile
+        // and add it to the selected cards
+        for (int i = 0; i < flopSize; i++)
+        {
+            selectedCards.Add(deck[UnityEngine.Random.Range(0, deck.Count)]);
+        }
+    }
+
+    private void ShuffleDrawPile()
+    {
+        // Implement the logic to shuffle the drawPile list here
+        // You can use the Fisher-Yates shuffle algorithm
+        for (int i = drawPile.Count - 1; i > 0; i--)
+        {
+            int randomIndex = UnityEngine.Random.Range(0, i + 1);
+            Card temp = drawPile[i];
+            drawPile[i] = drawPile[randomIndex];
+            drawPile[randomIndex] = temp;
         }
     }
     
@@ -809,8 +808,10 @@ public class GameController : MonoBehaviour
         pointsText.text = "Points: " + gameState.Points;
         submitsLeftText.text = "Submits Left: " + gameState.SubmitsLeft;
     }
-    void ResetGame(){
-        gameState = new GameState(relicFlopSize, relicSubmitLimit, startingDeckType);
+
+    void ResetGame(bool keepDeck = false){
+        List<Card> deck = keepDeck ? gameState.Deck : Utils.InitializeDeck(startingDeckType);
+        gameState = new GameState(relicFlopSize, relicSubmitLimit, deck);
         gameState.DrawCard();
         gameState.AddDiscards(relicInitialDiscards);
         UpdateUI();
@@ -829,6 +830,10 @@ public class GameController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.R))
         {
             ResetGame();
+        }
+        if (Input.GetKeyDown(KeyCode.N))
+        {
+            ResetGame(true);
         }
         if (Input.GetKeyDown(KeyCode.LeftArrow) && gameState.DiscardsLeft > 0)
         {
