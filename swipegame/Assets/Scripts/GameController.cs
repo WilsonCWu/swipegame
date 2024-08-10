@@ -6,7 +6,7 @@ using UnityEngine.Assertions;
 using System.Linq;
 using System;
 
-class Utils{
+public class Utils{
     public static string CardsToString(List<Card> cards){
         string result = "";
         foreach(Card card in cards){
@@ -55,6 +55,10 @@ class GameState
     public int DiscardsLeft
     {
         get { return discardsLeft; }
+    }
+    public List<Card> Deck
+    {
+        get { return deck; }
     }
 
     public GameState(int flopSize, int submitsLeft, StartingDeckType startingDeckType)
@@ -573,7 +577,7 @@ class GameState
     }
 }
 
-class Card : IComparable
+public class Card : IComparable
 {
     public Suit Suit { get; }
     public Rank Rank { get; }
@@ -653,7 +657,7 @@ class Card : IComparable
     }
 }
 
-enum Suit
+public enum Suit
 {
     Spades=4,
     Hearts=3,
@@ -661,7 +665,7 @@ enum Suit
     Clubs=1,
 }
 
-enum Rank
+public enum Rank
 {
     Ace = 14,
     Two = 2,
@@ -678,7 +682,7 @@ enum Rank
     King = 13,
 }
 
-enum HandType
+public enum HandType
 {
     HighCard,
     Pair,
@@ -837,6 +841,10 @@ public class GameController : MonoBehaviour
             gameState.DrawCard();
             gameState.AddDiscards(relicDiscardsGainedPerSelect);
             UpdateUI();
+        }
+        if (Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            CardSelectorManager.Instance.InitCardSelection(gameState.Deck);
         }
         // If full, evaluate hand and flush selected cards
         if ((gameState.SelectedCards.Count == 7 || (Input.GetKeyDown(KeyCode.UpArrow) && gameState.SelectedCards.Count > 0)) && gameState.SubmitsLeft > 0)
