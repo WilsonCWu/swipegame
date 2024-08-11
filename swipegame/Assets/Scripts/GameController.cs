@@ -12,10 +12,11 @@ class RunState
     private List<Card> forcedFlopCards;
     private List<Relic> relics;
 
-    public RunState(List<Card> deck, List<Card> forcedFlopCards)
+    public RunState(List<Card> deck, List<Card> forcedFlopCards, List<Relic> relics)
     {
         this.deck = deck;
         this.forcedFlopCards = forcedFlopCards;
+        this.relics = relics;
     }
 
     public List<Card> Deck
@@ -251,12 +252,15 @@ class GameState
                 basePoints = 200;
                 break;
         }
-        int baseCardPoints = 0;
+        foreach (Relic relic in runState.Relics)
+        {
+            basePoints += relic.GetBasePoints(hand);
+        }
         foreach (Card card in hand.cards)
         {
-            baseCardPoints += (int)card.Rank;
+            basePoints += (int)card.Rank;
         }
-        int multiplier = 1;
+        float multiplier = 1;
         switch (hand.handType)
         {
             case HandType.HighCard:
@@ -290,8 +294,16 @@ class GameState
                 multiplier = 10;
                 break;
         }
-        points += (basePoints + baseCardPoints) * multiplier;
-        Debug.Log("Added " + (basePoints + baseCardPoints) * multiplier + " points. basePoints=" + basePoints + ", baseCardPoints=" + baseCardPoints + ", multiplier=" + multiplier);
+        foreach (Relic relic in runState.Relics)
+        {
+            multiplier += relic.GetBaseMultiplier(hand);
+        }
+        foreach (Relic relic in runState.Relics)
+        {
+            multiplier *= relic.GetMultiplier(hand);
+        }
+        points += (int)(basePoints * multiplier);
+        Debug.Log("Added " + basePoints * multiplier + " points. basePoints=" + basePoints + ", multiplier=" + multiplier);
     }
 
     public int SubmitsLeft
@@ -414,7 +426,7 @@ public class GameController : MonoBehaviour
         }
         // also show the number left of each card number, and each suit
         countsLeftText.text = "";
-        foreach (Rank rank in System.Enum.GetValues(typeof(Rank)))
+        foreach (Rank rank in Enum.GetValues(typeof(Rank)))
         {
             int count = 0;
             foreach (Card card in gameState.DrawPile)
@@ -426,7 +438,7 @@ public class GameController : MonoBehaviour
             }
             countsLeftText.text += Card.RankToString(rank) + ": " + count + "\n";
         }
-        foreach (Suit suit in System.Enum.GetValues(typeof(Suit)))
+        foreach (Suit suit in Enum.GetValues(typeof(Suit)))
         {
             int count = 0;
             foreach (Card card in gameState.DrawPile)
@@ -444,7 +456,7 @@ public class GameController : MonoBehaviour
     }
 
     void ResetGame(bool keepRunState = false){
-        RunState runState = keepRunState ? gameState.RunState : new RunState(CardUtils.InitializeDeck(startingDeckType), new List<Card>());
+        RunState runState = keepRunState ? gameState.RunState : new RunState(CardUtils.InitializeDeck(startingDeckType), new List<Card>(), new List<Relic>());
         gameState = new GameState(relicFlopSize, relicSubmitLimit, relicFlopType, runState);
         gameState.DrawCard();
         gameState.AddDiscards(relicInitialDiscards);
@@ -472,7 +484,13 @@ public class GameController : MonoBehaviour
         gameState.RunState.AddForcedFlopCard(cards[0]);
         ResetGame(true);
     }
-    
+
+    void OnAddRelic(Relic relic)
+    {
+        gameState.RunState.AddRelic(relic);
+        ResetGame(true);
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -525,6 +543,16 @@ public class GameController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.F))
         {
             CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnAddForcedFlopCard);
+        }
+        if (Input.GetKeyDown(KeyCode.G))
+        {
+            // Generate random relics to add
+            List<Relic> relics = new List<Relic>();
+            for (int i = 0; i < 3; i++)
+            {
+                relics.Add(RelicUtils.RandomRelic());
+            }
+            RelicSelectorManager.Instance.InitRelicSelection(relics, OnAddRelic);
         }
         // If full, evaluate hand and flush selected cards
         if ((gameState.SelectedCards.Count == 7 || (Input.GetKeyDown(KeyCode.UpArrow) && gameState.SelectedCards.Count > 0)) && gameState.SubmitsLeft > 0)

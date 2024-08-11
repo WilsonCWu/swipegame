@@ -1,3 +1,26 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using UnityEngine.Assertions;
+
+
+public class RelicUtils
+{
+    public static readonly Relic[] AllRelics = new Relic[]
+    {
+        new BasePointsRelic(),
+        new BaseMultiplierRelic(),
+        new MultiplierRelic(),
+    };
+
+    public static Relic RandomRelic()
+    {
+        return AllRelics[UnityEngine.Random.Range(0, AllRelics.Length)];
+    }
+}
+
 public abstract class Relic
 {
     public abstract string Name();
