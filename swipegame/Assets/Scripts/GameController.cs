@@ -6,14 +6,54 @@ using UnityEngine.Assertions;
 using System.Linq;
 using System;
 
+class RunState
+{
+    private List<Card> deck;
+    private List<Card> forcedFlopCards;
+
+    public RunState(List<Card> deck, List<Card> forcedFlopCards)
+    {
+        this.deck = deck;
+        this.forcedFlopCards = forcedFlopCards;
+    }
+
+    public List<Card> Deck
+    {
+        get { return deck; }
+    }
+
+    public List<Card> ForcedFlopCards
+    {
+        get { return forcedFlopCards; }
+    }
+
+
+    public void AddCards(List<Card> cards)
+    {
+        deck.AddRange(cards);
+    }
+
+    public void RemoveCards(List<Card> cards)
+    {
+        foreach (Card card in cards)
+        {
+            deck.Remove(card);
+        }
+    }
+
+    public void AddForcedFlopCard(Card card)
+    {
+        forcedFlopCards.Add(card);
+    }
+}
+
 
 class GameState
 {
-    private List<Card> deck;
+    private RunState runState;
     private List<Card> drawPile;
     private Card curCard;
     private List<Card> selectedCards;
-    private List<Card> forcedFlopCards;
     private int discardsLeft;
     private int flopSize;
     private int points;
@@ -21,16 +61,15 @@ class GameState
     private FlopType flopType;
     private StartingDeckType startingDeckType;
 
-    public GameState(int flopSize, int submitsLeft, List<Card> deck, FlopType flopType, List<Card> forcedFlopCards)
+    public GameState(int flopSize, int submitsLeft, FlopType flopType, RunState runState)
     {
         this.flopSize = flopSize;
         this.submitsLeft = submitsLeft;
-        this.deck = deck;
         this.flopType = flopType;
-        drawPile = new List<Card>(deck);
+        this.runState = runState;
+        drawPile = new List<Card>(runState.Deck);
         ShuffleDrawPile();
         selectedCards = new List<Card>();
-        this.forcedFlopCards = new List<Card>(forcedFlopCards);
         GenerateFlop();
     }
     public void Discard(){
@@ -47,7 +86,7 @@ class GameState
         if (drawPile.Count == 0)
         {
             Debug.Log("reshuffling the draw pile");
-            drawPile = new List<Card>(deck);
+            drawPile = new List<Card>(runState.Deck);
             ShuffleDrawPile();
         }
         curCard = drawPile[drawPile.Count - 1];
@@ -63,7 +102,7 @@ class GameState
     }
 
     public void GenerateFlop(){
-        if (forcedFlopCards.Count > 0 && flopType != FlopType.FromDeck)
+        if (runState.ForcedFlopCards.Count > 0 && flopType != FlopType.FromDeck)
         {
             Debug.LogError("Warning: only supports FromDeck, changing floptype");
             flopType = FlopType.FromDeck;
@@ -77,7 +116,7 @@ class GameState
                 }
                 break;
             case FlopType.FromDeck:
-                selectedCards.AddRange(forcedFlopCards);
+                selectedCards.AddRange(runState.ForcedFlopCards);
                 // Generate a flop of size flopSize. Generate a random card from the draw pile
                 // and add it to the selected cards
                 for (int i = 0; i < flopSize-selectedCards.Count; i++)
@@ -147,7 +186,7 @@ class GameState
             result += card.ToString() + ", ";
         }
         result += "\nDeck: ";
-        foreach (Card card in deck)
+        foreach (Card card in runState.ForcedFlopCards)
         {
             result += card.ToString() + ", ";
         }
@@ -273,30 +312,17 @@ class GameState
     }
     public List<Card> Deck
     {
-        get { return deck; }
+        get { return runState.Deck; }
     }
 
     public List<Card> ForcedFlopCards
     {
-        get { return forcedFlopCards; }
+        get { return runState.ForcedFlopCards; }
     }
 
-    public void AddCards(List<Card> cards)
+    public RunState RunState
     {
-        deck.AddRange(cards);
-    }
-
-    public void RemoveCards(List<Card> cards)
-    {
-        foreach (Card card in cards)
-        {
-            deck.Remove(card);
-        }
-    }
-
-    public void AddForcedFlopCard(Card card)
-    {
-        forcedFlopCards.Add(card);
+        get { return runState; }
     }
 
 }
@@ -407,10 +433,9 @@ public class GameController : MonoBehaviour
         submitsLeftText.text = "Submits Left: " + gameState.SubmitsLeft;
     }
 
-    void ResetGame(bool keepDeck = false){
-        List<Card> deck = keepDeck ? gameState.Deck : CardUtils.InitializeDeck(startingDeckType);
-        List<Card> forcedFlopCards = keepDeck ? gameState.ForcedFlopCards : new List<Card>();
-        gameState = new GameState(relicFlopSize, relicSubmitLimit, deck, relicFlopType, forcedFlopCards);
+    void ResetGame(bool keepRunState = false){
+        RunState runState = keepRunState ? gameState.RunState : new RunState(CardUtils.InitializeDeck(startingDeckType), new List<Card>());
+        gameState = new GameState(relicFlopSize, relicSubmitLimit, relicFlopType, runState);
         gameState.DrawCard();
         gameState.AddDiscards(relicInitialDiscards);
         UpdateUI();
@@ -418,13 +443,13 @@ public class GameController : MonoBehaviour
 
     void OnAddCards(List<Card> cards)
     {
-        gameState.AddCards(cards);
+        gameState.RunState.AddCards(cards);
         ResetGame(true);
     }
 
     void OnRemoveCards(List<Card> cards)
     {
-        gameState.RemoveCards(cards);
+        gameState.RunState.RemoveCards(cards);
         ResetGame(true);
     }
 
@@ -434,7 +459,7 @@ public class GameController : MonoBehaviour
         {
             Debug.LogError("TODO: enforce card limit");
         }
-        gameState.AddForcedFlopCard(cards[0]);
+        gameState.RunState.AddForcedFlopCard(cards[0]);
         ResetGame(true);
     }
     
