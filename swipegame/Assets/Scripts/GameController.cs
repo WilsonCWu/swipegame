@@ -10,6 +10,7 @@ class RunState
 {
     private List<Card> deck;
     private List<Card> forcedFlopCards;
+    private List<Relic> relics;
 
     public RunState(List<Card> deck, List<Card> forcedFlopCards)
     {
@@ -27,6 +28,10 @@ class RunState
         get { return forcedFlopCards; }
     }
 
+    public List<Relic> Relics
+    {
+        get { return relics; }
+    }
 
     public void AddCards(List<Card> cards)
     {
@@ -44,6 +49,11 @@ class RunState
     public void AddForcedFlopCard(Card card)
     {
         forcedFlopCards.Add(card);
+    }
+
+    public void AddRelic(Relic relic)
+    {
+        relics.Add(relic);
     }
 }
 
@@ -206,9 +216,9 @@ class GameState
         // score = base points * handType multiplier
         // base points scale off of handType and cards in hand
         // multiplier scales off of handType
-        Tuple<HandType, List<Card>> hand = CardUtils.EvaluateHand(selectedCards);
+        Hand hand = CardUtils.EvaluateHand(selectedCards);
         int basePoints = 0;
-        switch (hand.Item1)
+        switch (hand.handType)
         {
             case HandType.HighCard:
                 basePoints = 5;
@@ -242,12 +252,12 @@ class GameState
                 break;
         }
         int baseCardPoints = 0;
-        foreach (Card card in hand.Item2)
+        foreach (Card card in hand.cards)
         {
             baseCardPoints += (int)card.Rank;
         }
         int multiplier = 1;
-        switch (hand.Item1)
+        switch (hand.handType)
         {
             case HandType.HighCard:
                 multiplier = 1;
@@ -354,21 +364,21 @@ public class GameController : MonoBehaviour
         curCardText.text = gameState.CurCard.ToString();
         if (gameState.SelectedCards.Count != 0)
         {
-            Tuple<HandType, List<Card>> bestHand = CardUtils.EvaluateHand(gameState.SelectedCards);
+            Hand bestHand = CardUtils.EvaluateHand(gameState.SelectedCards);
             for (int i = 0; i < gameState.SelectedCards.Count; i++)
             {
                 // if selectedCard is in bestHand, remove it from bestHand and color it
-                if (bestHand.Item2.Contains(gameState.SelectedCards[i]))
+                if (bestHand.cards.Contains(gameState.SelectedCards[i]))
                 {
                     selectedCardTexts[i].text = "<color=green>" + gameState.SelectedCards[i].ToString() + "</color>";
-                    bestHand.Item2.Remove(gameState.SelectedCards[i]);
+                    bestHand.cards.Remove(gameState.SelectedCards[i]);
                 }
                 else
                 {
                     selectedCardTexts[i].text = gameState.SelectedCards[i].ToString();
                 }
             }
-            handTypeText.text = bestHand.Item1.ToString();
+            handTypeText.text = bestHand.handType.ToString();
         }
         else{
             handTypeText.text = "";

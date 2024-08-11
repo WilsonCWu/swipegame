@@ -16,9 +16,9 @@ public class CardUtils
         }
         return result;
     }
-    public static string HandToString(Tuple<HandType, List<Card>> hand)
+    public static string HandToString(Hand hand)
     {
-        return hand.Item1.ToString() + ": " + CardsToString(hand.Item2);
+        return hand.handType.ToString() + ": " + CardsToString(hand.cards);
     }
     public static List<Card> InitializeDeck(StartingDeckType startingDeckType)
     {
@@ -26,18 +26,18 @@ public class CardUtils
         switch (startingDeckType)
         {
             case StartingDeckType.Standard:
-                foreach (Suit suit in System.Enum.GetValues(typeof(Suit)))
+                foreach (Suit suit in Enum.GetValues(typeof(Suit)))
                 {
-                    foreach (Rank rank in System.Enum.GetValues(typeof(Rank)))
+                    foreach (Rank rank in Enum.GetValues(typeof(Rank)))
                     {
                         deck.Add(new Card(suit, rank));
                     }
                 }
                 break;
             case StartingDeckType.NoFaceCards:
-                foreach (Suit suit in System.Enum.GetValues(typeof(Suit)))
+                foreach (Suit suit in Enum.GetValues(typeof(Suit)))
                 {
-                    foreach (Rank rank in System.Enum.GetValues(typeof(Rank)))
+                    foreach (Rank rank in Enum.GetValues(typeof(Rank)))
                     {
                         if (rank < Rank.Jack)
                         {
@@ -47,9 +47,9 @@ public class CardUtils
                 }
                 break;
             case StartingDeckType.OnlyRedCards:
-                foreach (Suit suit in System.Enum.GetValues(typeof(Suit)))
+                foreach (Suit suit in Enum.GetValues(typeof(Suit)))
                 {
-                    foreach (Rank rank in System.Enum.GetValues(typeof(Rank)))
+                    foreach (Rank rank in Enum.GetValues(typeof(Rank)))
                     {
                         if (suit == Suit.Hearts || suit == Suit.Diamonds)
                         {
@@ -60,9 +60,9 @@ public class CardUtils
                 }
                 break;
             case StartingDeckType.DoubleCardsBelow7:
-                foreach (Suit suit in System.Enum.GetValues(typeof(Suit)))
+                foreach (Suit suit in Enum.GetValues(typeof(Suit)))
                 {
-                    foreach (Rank rank in System.Enum.GetValues(typeof(Rank)))
+                    foreach (Rank rank in Enum.GetValues(typeof(Rank)))
                     {
                         deck.Add(new Card(suit, rank));
                         if (rank <= Rank.Seven)
@@ -81,27 +81,27 @@ public class CardUtils
         }
         return deck;
     }
-    public static Tuple<bool, List<Card>> containsRoyalFlush(List<Card> cards)
+    public static Hand ContainsRoyalFlush(List<Card> cards)
     {
         // Returns a tuple of whether the cards contain a royal flush and the cards that form the royal flush
         // cards can contain any number of cards
         // Royal flush is a straight flush from 10 to Ace
 
-        // use containsStraightFlush
-        Tuple<bool, List<Card>> straightFlush = containsStraightFlush(cards);
-        if (!straightFlush.Item1)
+        // use ContainsStraightFlush
+        Hand straightFlush = ContainsStraightFlush(cards);
+        if (straightFlush == null)
         {
-            return new Tuple<bool, List<Card>>(false, new List<Card>());
+            return null;
         }
-        List<Card> straightFlushCards = straightFlush.Item2;
+        List<Card> straightFlushCards = straightFlush.cards;
         if (straightFlushCards[0].Rank == Rank.Ace && straightFlushCards[straightFlushCards.Count - 1].Rank == Rank.Ten)
         {
-            return new Tuple<bool, List<Card>>(true, straightFlushCards);
+            return new Hand(HandType.RoyalFlush, straightFlush.cards);
         }
-        return new Tuple<bool, List<Card>>(false, new List<Card>());
+        return null;
     }
 
-    public static Tuple<bool, List<Card>> containsStraightFlush(List<Card> cards)
+    public static Hand ContainsStraightFlush(List<Card> cards)
     {
         // Returns a tuple of whether the cards contain a straight flush and the cards that form the straight flush
         // cards can contain any number of cards
@@ -135,19 +135,19 @@ public class CardUtils
             {
                 if (ranks[i] - ranks[i + 4] == 4)
                 {
-                    return new Tuple<bool, List<Card>>(true, new List<Card> { rankToCard[ranks[i]], rankToCard[ranks[i + 1]], rankToCard[ranks[i + 2]], rankToCard[ranks[i + 3]], rankToCard[ranks[i + 4]] });
+                    return new Hand(HandType.StraightFlush, new List<Card> { rankToCard[ranks[i]], rankToCard[ranks[i + 1]], rankToCard[ranks[i + 2]], rankToCard[ranks[i + 3]], rankToCard[ranks[i + 4]] });
                 }
             }
             // check ace low straight
             if (rankToCard.ContainsKey(Rank.Ace) && rankToCard.ContainsKey(Rank.Two) && rankToCard.ContainsKey(Rank.Three) && rankToCard.ContainsKey(Rank.Four) && rankToCard.ContainsKey(Rank.Five))
             {
-                return new Tuple<bool, List<Card>>(true, new List<Card> { rankToCard[Rank.Ace], rankToCard[Rank.Two], rankToCard[Rank.Three], rankToCard[Rank.Four], rankToCard[Rank.Five] });
+                return new Hand(HandType.StraightFlush, new List<Card> { rankToCard[Rank.Ace], rankToCard[Rank.Two], rankToCard[Rank.Three], rankToCard[Rank.Four], rankToCard[Rank.Five] });
             }
         }
-        return new Tuple<bool, List<Card>>(false, new List<Card>());
+        return null;
     }
 
-    public static Tuple<bool, List<Card>> containsNOfAKind(List<Card> cards, int n)
+    public static Hand ContainsNOfAKind(List<Card> cards, int n, HandType handType)
     {
         // Returns a tuple of whether the cards contain n of a kind and the cards that form the n of a kind
         // cards can contain any number of cards
@@ -171,88 +171,88 @@ public class CardUtils
             List<Card> rankCards = rankToCards[rank];
             if (rankCards.Count >= n)
             {
-                return new Tuple<bool, List<Card>>(true, rankCards.GetRange(0, n));
+                return new Hand(handType, rankCards.GetRange(0, n));
             }
         }
-        return new Tuple<bool, List<Card>>(false, new List<Card>());
+        return null;
     }
 
-    public static Tuple<bool, List<Card>> containsFourOfAKind(List<Card> cards)
+    public static Hand ContainsFourOfAKind(List<Card> cards)
     {
-        return containsNOfAKind(cards, 4);
+        return ContainsNOfAKind(cards, 4, HandType.FourOfAKind);
     }
 
-    public static Tuple<bool, List<Card>> containsThreeOfAKind(List<Card> cards)
+    public static Hand ContainsThreeOfAKind(List<Card> cards)
     {
-        return containsNOfAKind(cards, 3);
+        return ContainsNOfAKind(cards, 3, HandType.ThreeOfAKind);
     }
 
 
-    public static Tuple<bool, List<Card>> containsTwoOfAKind(List<Card> cards)
+    public static Hand ContainsTwoOfAKind(List<Card> cards)
     {
-        return containsNOfAKind(cards, 2);
+        return ContainsNOfAKind(cards, 2, HandType.Pair);
     }
 
 
-    public static Tuple<bool, List<Card>> containsHighCard(List<Card> cards)
+    public static Hand ContainsHighCard(List<Card> cards)
     {
-        return containsNOfAKind(cards, 1);
+        return ContainsNOfAKind(cards, 1, HandType.HighCard);
     }
 
-    public static Tuple<bool, List<Card>> containsFullHouse(List<Card> cards)
+    public static Hand ContainsFullHouse(List<Card> cards)
     {
         // Returns a tuple of whether the cards contain a full house and the cards that form the full house
         // cards can contain any number of cards
         // Full house is a three of a kind and a pair
         // If there are multiple full houses, return the highest
 
-        Tuple<bool, List<Card>> threeOfAKind = containsThreeOfAKind(cards);
-        if (!threeOfAKind.Item1)
+        Hand threeOfAKind = ContainsThreeOfAKind(cards);
+        if (threeOfAKind == null)
         {
-            return new Tuple<bool, List<Card>>(false, new List<Card>());
+            return null;
         }
-        List<Card> threeOfAKindCards = threeOfAKind.Item2;
+        List<Card> threeOfAKindCards = threeOfAKind.cards;
         List<Card> remainingCards = new List<Card>(cards);
         foreach (Card card in threeOfAKindCards)
         {
             remainingCards.Remove(card);
         }
-        Tuple<bool, List<Card>> twoOfAKind = containsTwoOfAKind(remainingCards);
-        if (!twoOfAKind.Item1)
+        Hand twoOfAKind = ContainsTwoOfAKind(remainingCards);
+        if (twoOfAKind == null)
         {
-            return new Tuple<bool, List<Card>>(false, new List<Card>());
+            return null;
         }
-        List<Card> twoOfAKindCards = twoOfAKind.Item2;
-        return new Tuple<bool, List<Card>>(true, threeOfAKindCards.Concat(twoOfAKindCards).ToList());
+        List<Card> twoOfAKindCards = twoOfAKind.cards;
+        return new Hand(HandType.FullHouse, threeOfAKindCards.Concat(twoOfAKindCards).ToList());
     }
 
-    public static Tuple<bool, List<Card>> containsTwoPair(List<Card> cards)
+    public static Hand ContainsTwoPair(List<Card> cards)
     {
         // Returns a tuple of whether the cards contain two pair and the cards that form the two pair
         // cards can contain any number of cards
         // Two pair is two pairs of cards of the same rank
         // If there are multiple two pairs, return the highest
 
-        Tuple<bool, List<Card>> pair1 = containsTwoOfAKind(cards);
-        if (!pair1.Item1)
+        Hand pair1 = ContainsTwoOfAKind(cards);
+        if (pair1 == null)
         {
-            return new Tuple<bool, List<Card>>(false, new List<Card>());
+            return null;
         }
-        List<Card> pair1Cards = pair1.Item2;
+        List<Card> pair1Cards = pair1.cards;
         List<Card> remainingCards = new List<Card>(cards);
         foreach (Card card in pair1Cards)
         {
             remainingCards.Remove(card);
         }
-        Tuple<bool, List<Card>> pair2 = containsTwoOfAKind(remainingCards);
-        if (!pair2.Item1)
+        Hand pair2 = ContainsTwoOfAKind(remainingCards);
+        if (pair2 == null)
         {
-            return new Tuple<bool, List<Card>>(false, new List<Card>());
+            return null;
         }
-        List<Card> pair2Cards = pair2.Item2;
-        return new Tuple<bool, List<Card>>(true, pair1Cards.Concat(pair2Cards).ToList());
+        List<Card> pair2Cards = pair2.cards;
+        return new Hand(HandType.TwoPair, pair1Cards.Concat(pair2Cards).ToList());
     }
-    public static Tuple<bool, List<Card>> containsStraight(List<Card> cards)
+    public static Hand ContainsStraight(List<Card> cards)
     {
         // Returns a tuple of whether the cards contain a straight and the cards that form the straight
         // cards can contain any number of cards
@@ -271,17 +271,17 @@ public class CardUtils
         {
             if (ranks[i] - ranks[i + 4] == 4)
             {
-                return new Tuple<bool, List<Card>>(true, new List<Card> { rankToCard[ranks[i]], rankToCard[ranks[i + 1]], rankToCard[ranks[i + 2]], rankToCard[ranks[i + 3]], rankToCard[ranks[i + 4]] });
+                return new Hand(HandType.Straight, new List<Card> { rankToCard[ranks[i]], rankToCard[ranks[i + 1]], rankToCard[ranks[i + 2]], rankToCard[ranks[i + 3]], rankToCard[ranks[i + 4]] });
             }
         }
         // check ace low straight
         if (rankToCard.ContainsKey(Rank.Ace) && rankToCard.ContainsKey(Rank.Two) && rankToCard.ContainsKey(Rank.Three) && rankToCard.ContainsKey(Rank.Four) && rankToCard.ContainsKey(Rank.Five))
         {
-            return new Tuple<bool, List<Card>>(true, new List<Card> { rankToCard[Rank.Ace], rankToCard[Rank.Two], rankToCard[Rank.Three], rankToCard[Rank.Four], rankToCard[Rank.Five] });
+            return new Hand(HandType.Straight, new List<Card> { rankToCard[Rank.Ace], rankToCard[Rank.Two], rankToCard[Rank.Three], rankToCard[Rank.Four], rankToCard[Rank.Five] });
         }
-        return new Tuple<bool, List<Card>>(false, new List<Card>());
+        return null;
     }
-    public static Tuple<bool, List<Card>> containsFlush(List<Card> cards)
+    public static Hand ContainsFlush(List<Card> cards)
     {
         // Returns a tuple of whether the cards contain a flush and the cards that form the flush
         // cards can contain any number of cards
@@ -303,23 +303,23 @@ public class CardUtils
             suitCards.Reverse();
             if (suitCards.Count >= 5)
             {
-                return new Tuple<bool, List<Card>>(true, suitCards.GetRange(0, 5));
+                return new Hand(HandType.Flush, suitCards.GetRange(0, 5));
             }
         }
-        return new Tuple<bool, List<Card>>(false, new List<Card>());
+        return null;
     }
 
-    public static Tuple<HandType, List<Card>> EvaluateHand(List<Card> cards)
+    public static Hand EvaluateHand(List<Card> cards)
     {
         // same but sorted
-        Tuple<HandType, List<Card>> result = _EvaluateHand(cards);
-        result.Item2.Sort();
-        result.Item2.Reverse();
+        Hand result = _EvaluateHand(cards);
+        result.cards.Sort();
+        result.cards.Reverse();
         return result;
     }
 
 
-    private static Tuple<HandType, List<Card>> _EvaluateHand(List<Card> cards)
+    private static Hand _EvaluateHand(List<Card> cards)
     {
         // Returns the best hand that can be formed from the selected cards
         // and the cards that form the hand
@@ -331,58 +331,70 @@ public class CardUtils
         // If there are multiple hands of the same type, tie break with the highest value cards.
         // Otherwise, tie break by selecting first selected cards.
         Assert.IsTrue(cards.Count != 0);
-        Tuple<bool, List<Card>> royalFlush = containsRoyalFlush(cards);
-        if (royalFlush.Item1)
+        Hand royalFlush = ContainsRoyalFlush(cards);
+        if (royalFlush != null)
         {
-            return new Tuple<HandType, List<Card>>(HandType.RoyalFlush, royalFlush.Item2);
+            return royalFlush;
         }
-        Tuple<bool, List<Card>> straightFlush = containsStraightFlush(cards);
-        if (straightFlush.Item1)
+        Hand straightFlush = ContainsStraightFlush(cards);
+        if (straightFlush != null)
         {
-            return new Tuple<HandType, List<Card>>(HandType.StraightFlush, straightFlush.Item2);
+            return straightFlush;
         }
-        Tuple<bool, List<Card>> fourOfAKind = containsFourOfAKind(cards);
-        if (fourOfAKind.Item1)
+        Hand fourOfAKind = ContainsFourOfAKind(cards);
+        if (fourOfAKind != null)
         {
-            return new Tuple<HandType, List<Card>>(HandType.FourOfAKind, fourOfAKind.Item2);
+            return fourOfAKind;
         }
-        Tuple<bool, List<Card>> fullHouse = containsFullHouse(cards);
-        if (fullHouse.Item1)
+        Hand fullHouse = ContainsFullHouse(cards);
+        if (fullHouse != null)
         {
-            return new Tuple<HandType, List<Card>>(HandType.FullHouse, fullHouse.Item2);
+            return fullHouse;
         }
-        Tuple<bool, List<Card>> flush = containsFlush(cards);
-        if (flush.Item1)
+        Hand flush = ContainsFlush(cards);
+        if (flush != null)
         {
-            return new Tuple<HandType, List<Card>>(HandType.Flush, flush.Item2);
+            return flush;
         }
-        Tuple<bool, List<Card>> straight = containsStraight(cards);
-        if (straight.Item1)
+        Hand straight = ContainsStraight(cards);
+        if (straight != null)
         {
-            return new Tuple<HandType, List<Card>>(HandType.Straight, straight.Item2);
+            return straight;
         }
-        Tuple<bool, List<Card>> threeOfAKind = containsThreeOfAKind(cards);
-        if (threeOfAKind.Item1)
+        Hand threeOfAKind = ContainsThreeOfAKind(cards);
+        if (threeOfAKind != null)
         {
-            return new Tuple<HandType, List<Card>>(HandType.ThreeOfAKind, threeOfAKind.Item2);
+            return threeOfAKind;
         }
-        Tuple<bool, List<Card>> twoPair = containsTwoPair(cards);
-        if (twoPair.Item1)
+        Hand twoPair = ContainsTwoPair(cards);
+        if (twoPair != null)
         {
-            return new Tuple<HandType, List<Card>>(HandType.TwoPair, twoPair.Item2);
+            return twoPair;
         }
-        Tuple<bool, List<Card>> pair = containsTwoOfAKind(cards);
-        if (pair.Item1)
+        Hand pair = ContainsTwoOfAKind(cards);
+        if (pair != null)
         {
-            return new Tuple<HandType, List<Card>>(HandType.Pair, pair.Item2);
+            return pair;
         }
-        Tuple<bool, List<Card>> highCard = containsHighCard(cards);
-        if (highCard.Item1)
+        Hand highCard = ContainsHighCard(cards);
+        if (highCard != null)
         {
-            return new Tuple<HandType, List<Card>>(HandType.HighCard, highCard.Item2);
+            return highCard;
         }
         Assert.IsTrue(false);
-        return new Tuple<HandType, List<Card>>(HandType.HighCard, new List<Card>());
+        return new Hand(HandType.HighCard, new List<Card>());
+    }
+}
+
+public class Hand
+{
+    public HandType handType;
+    public List<Card> cards;
+
+    public Hand(HandType handType, List<Card> cards)
+    {
+        this.handType = handType;
+        this.cards = cards;
     }
 }
 
