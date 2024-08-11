@@ -13,6 +13,7 @@ class GameState
     private List<Card> drawPile;
     private Card curCard;
     private List<Card> selectedCards;
+    private List<Card> forcedFlopCards;
     private int discardsLeft;
     private int flopSize;
     private int points;
@@ -20,7 +21,7 @@ class GameState
     private FlopType flopType;
     private StartingDeckType startingDeckType;
 
-    public GameState(int flopSize, int submitsLeft, List<Card> deck, FlopType flopType)
+    public GameState(int flopSize, int submitsLeft, List<Card> deck, FlopType flopType, List<Card> forcedFlopCards)
     {
         this.flopSize = flopSize;
         this.submitsLeft = submitsLeft;
@@ -29,6 +30,7 @@ class GameState
         drawPile = new List<Card>(deck);
         ShuffleDrawPile();
         selectedCards = new List<Card>();
+        this.forcedFlopCards = new List<Card>(forcedFlopCards);
         GenerateFlop();
     }
     public void Discard(){
@@ -61,6 +63,11 @@ class GameState
     }
 
     public void GenerateFlop(){
+        if (forcedFlopCards.Count > 0 && flopType != FlopType.FromDeck)
+        {
+            Debug.LogError("Warning: only supports FromDeck, changing floptype");
+            flopType = FlopType.FromDeck;
+        }
         switch (flopType)
         {
             case FlopType.Standard:
@@ -70,9 +77,10 @@ class GameState
                 }
                 break;
             case FlopType.FromDeck:
+                selectedCards.AddRange(forcedFlopCards);
                 // Generate a flop of size flopSize. Generate a random card from the draw pile
                 // and add it to the selected cards
-                for (int i = 0; i < flopSize; i++)
+                for (int i = 0; i < flopSize-selectedCards.Count; i++)
                 {
                     selectedCards.Add(drawPile[UnityEngine.Random.Range(0, drawPile.Count)]);
                 }
@@ -268,6 +276,11 @@ class GameState
         get { return deck; }
     }
 
+    public List<Card> ForcedFlopCards
+    {
+        get { return forcedFlopCards; }
+    }
+
     public void AddCards(List<Card> cards)
     {
         deck.AddRange(cards);
@@ -279,6 +292,11 @@ class GameState
         {
             deck.Remove(card);
         }
+    }
+
+    public void AddForcedFlopCard(Card card)
+    {
+        forcedFlopCards.Add(card);
     }
 
 }
@@ -391,7 +409,8 @@ public class GameController : MonoBehaviour
 
     void ResetGame(bool keepDeck = false){
         List<Card> deck = keepDeck ? gameState.Deck : CardUtils.InitializeDeck(startingDeckType);
-        gameState = new GameState(relicFlopSize, relicSubmitLimit, deck, relicFlopType);
+        List<Card> forcedFlopCards = keepDeck ? gameState.ForcedFlopCards : new List<Card>();
+        gameState = new GameState(relicFlopSize, relicSubmitLimit, deck, relicFlopType, forcedFlopCards);
         gameState.DrawCard();
         gameState.AddDiscards(relicInitialDiscards);
         UpdateUI();
@@ -408,6 +427,16 @@ public class GameController : MonoBehaviour
         gameState.RemoveCards(cards);
         ResetGame(true);
     }
+
+    void OnAddForcedFlopCard(List<Card> cards)
+    {
+        if (cards.Count != 1)
+        {
+            Debug.LogError("TODO: enforce card limit");
+        }
+        gameState.AddForcedFlopCard(cards[0]);
+        ResetGame(true);
+    }
     
     // Start is called before the first frame update
     void Start()
@@ -420,11 +449,11 @@ public class GameController : MonoBehaviour
     void Update()
     {
         // input
-        if (Input.GetKeyDown(KeyCode.R))
+        if (Input.GetKeyDown(KeyCode.N))
         {
             ResetGame();
         }
-        if (Input.GetKeyDown(KeyCode.N))
+        if (Input.GetKeyDown(KeyCode.R))
         {
             ResetGame(true);
         }
@@ -457,6 +486,10 @@ public class GameController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.E))
         {
             CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnRemoveCards);
+        }
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnAddForcedFlopCard);
         }
         // If full, evaluate hand and flush selected cards
         if ((gameState.SelectedCards.Count == 7 || (Input.GetKeyDown(KeyCode.UpArrow) && gameState.SelectedCards.Count > 0)) && gameState.SubmitsLeft > 0)
