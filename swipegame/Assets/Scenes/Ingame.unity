@@ -1647,6 +1647,7 @@ MonoBehaviour:
   pointsText: {fileID: 593018874}
   submitsLeftText: {fileID: 447276312}
   startingDeckType: 0
+  relicFlopType: 1
   relicFlopSize: 3
   relicNumDrawSeeable: 1
   relicInitialDiscards: 3

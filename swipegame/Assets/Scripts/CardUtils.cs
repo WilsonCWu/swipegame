@@ -519,3 +519,12 @@ public enum StartingDeckType
     DoubleCardsBelow7,
     Random,
 }
+
+public enum FlopType
+{
+    Standard,
+    FromDeck,
+    NoFaceCards,
+    OnlyRedCards,
+    OnlyConsecutive,
+}

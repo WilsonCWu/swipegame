@@ -17,17 +17,19 @@ class GameState
     private int flopSize;
     private int points;
     private int submitsLeft;
+    private FlopType flopType;
     private StartingDeckType startingDeckType;
 
-    public GameState(int flopSize, int submitsLeft, List<Card> deck)
+    public GameState(int flopSize, int submitsLeft, List<Card> deck, FlopType flopType)
     {
         this.flopSize = flopSize;
         this.submitsLeft = submitsLeft;
         this.deck = deck;
+        this.flopType = flopType;
         drawPile = new List<Card>(deck);
         ShuffleDrawPile();
         selectedCards = new List<Card>();
-        GenerateFlop(flopSize);
+        GenerateFlop();
     }
     public void Discard(){
         Assert.IsTrue(discardsLeft > 0);
@@ -58,12 +60,60 @@ class GameState
         selectedCards.Clear();
     }
 
-    public void GenerateFlop(int flopSize){
-        // Generate a flop of size flopSize. Generate a random card, not from the draw pile
-        // and add it to the selected cards
-        for (int i = 0; i < flopSize; i++)
+    public void GenerateFlop(){
+        switch (flopType)
         {
-            selectedCards.Add(deck[UnityEngine.Random.Range(0, deck.Count)]);
+            case FlopType.Standard:
+                for (int i = 0; i < flopSize; i++)
+                {
+                    selectedCards.Add(Card.RandomCard());
+                }
+                break;
+            case FlopType.FromDeck:
+                // Generate a flop of size flopSize. Generate a random card from the draw pile
+                // and add it to the selected cards
+                for (int i = 0; i < flopSize; i++)
+                {
+                    selectedCards.Add(drawPile[UnityEngine.Random.Range(0, drawPile.Count)]);
+                }
+                break;
+            case FlopType.NoFaceCards:
+                for (int i = 0; i < flopSize; i++)
+                {
+                    Card card = Card.RandomCard();
+                    while (card.Rank == Rank.Jack || card.Rank == Rank.Queen || card.Rank == Rank.King)
+                    {
+                        card = Card.RandomCard();
+                    }
+                    selectedCards.Add(card);
+                }
+                break;
+            case FlopType.OnlyRedCards:
+                for (int i = 0; i < flopSize; i++)
+                {
+                    Card card = Card.RandomCard();
+                    while (card.Suit == Suit.Clubs || card.Suit == Suit.Spades)
+                    {
+                        card = Card.RandomCard();
+                    }
+                    selectedCards.Add(card);
+                }
+                break;
+            case FlopType.OnlyConsecutive:
+                int startingRank = UnityEngine.Random.Range(1, 12);
+                if (startingRank == 1)
+                {
+                    selectedCards.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), Rank.Ace));
+                    selectedCards.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), Rank.Two));
+                    selectedCards.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), Rank.Three));
+                }
+                else
+                {
+                    selectedCards.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), (Rank)startingRank));
+                    selectedCards.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), (Rank)(startingRank + 1)));
+                    selectedCards.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), (Rank)(startingRank + 2)));
+                }
+                break;
         }
     }
 
@@ -245,6 +295,7 @@ public class GameController : MonoBehaviour
     public TextMeshProUGUI pointsText;
     public TextMeshProUGUI submitsLeftText;
     public StartingDeckType startingDeckType;
+    public FlopType relicFlopType;
     public int relicFlopSize;
     public int relicNumDrawSeeable;
     public int relicInitialDiscards;
@@ -340,7 +391,7 @@ public class GameController : MonoBehaviour
 
     void ResetGame(bool keepDeck = false){
         List<Card> deck = keepDeck ? gameState.Deck : CardUtils.InitializeDeck(startingDeckType);
-        gameState = new GameState(relicFlopSize, relicSubmitLimit, deck);
+        gameState = new GameState(relicFlopSize, relicSubmitLimit, deck, relicFlopType);
         gameState.DrawCard();
         gameState.AddDiscards(relicInitialDiscards);
         UpdateUI();
@@ -417,7 +468,7 @@ public class GameController : MonoBehaviour
             gameState.EvaluateAndUpdatePoints();
             gameState.ClearSelectedCards();
             gameState.AddDiscards(relicDiscardsGainedPerSubmit);
-            gameState.GenerateFlop(relicFlopSize);
+            gameState.GenerateFlop();
             UpdateUI();
         }
     }
