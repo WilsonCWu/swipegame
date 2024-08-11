@@ -27,7 +27,7 @@ public class CardSelectorManager : MonoBehaviour
     public void OnConfirmClicked()
     {
         List<Card> selectedCards = GetSelectedCardsAndClear();
-        Debug.Log("Cards selected: " + Utils.CardsToString(selectedCards));
+        Debug.Log("Cards selected: " + CardUtils.CardsToString(selectedCards));
         Debug.LogError("Implement this method");
     }
 
