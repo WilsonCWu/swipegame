@@ -45,6 +45,7 @@ public class CardSelectorManager : MonoBehaviour
         {
             Destroy(selector.gameObject);
         }
+        selectors.Clear();
         return selectedCards;
     }
 
