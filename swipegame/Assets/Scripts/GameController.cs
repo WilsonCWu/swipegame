@@ -19,37 +19,6 @@ class GameState
     private int submitsLeft;
     private StartingDeckType startingDeckType;
 
-    public int SubmitsLeft
-    {
-        get { return submitsLeft; }
-    }
-
-    public int Points
-    {
-        get { return points; }
-    }
-
-    public Card CurCard
-    {
-        get { return curCard; }
-    }
-    public List<Card> SelectedCards
-    {
-        get { return selectedCards; }
-    }
-    public List<Card> DrawPile
-    {
-        get { return drawPile; }
-    }
-    public int DiscardsLeft
-    {
-        get { return discardsLeft; }
-    }
-    public List<Card> Deck
-    {
-        get { return deck; }
-    }
-
     public GameState(int flopSize, int submitsLeft, List<Card> deck)
     {
         this.flopSize = flopSize;
@@ -218,134 +187,50 @@ class GameState
         Debug.Log("Added " + (basePoints + baseCardPoints) * multiplier + " points. basePoints=" + basePoints + ", baseCardPoints=" + baseCardPoints + ", multiplier=" + multiplier);
     }
 
-}
-
-public class Card : IComparable
-{
-    public Suit Suit { get; }
-    public Rank Rank { get; }
-
-    public Card(Suit suit, Rank rank)
+    public int SubmitsLeft
     {
-        Suit = suit;
-        Rank = rank;
+        get { return submitsLeft; }
     }
 
-    public override string ToString()
+    public int Points
     {
-        return SuitToString(Suit) + RankToString(Rank);
+        get { return points; }
     }
 
-    public static string SuitToString(Suit suit)
+    public Card CurCard
     {
-        switch(suit)
+        get { return curCard; }
+    }
+    public List<Card> SelectedCards
+    {
+        get { return selectedCards; }
+    }
+    public List<Card> DrawPile
+    {
+        get { return drawPile; }
+    }
+    public int DiscardsLeft
+    {
+        get { return discardsLeft; }
+    }
+    public List<Card> Deck
+    {
+        get { return deck; }
+    }
+
+    public void AddCards(List<Card> cards)
+    {
+        deck.AddRange(cards);
+    }
+
+    public void RemoveCards(List<Card> cards)
+    {
+        foreach (Card card in cards)
         {
-            case Suit.Spades:
-                return "♠";
-            case Suit.Hearts:
-                return "♥";
-            case Suit.Diamonds:
-                return "♦";
-            case Suit.Clubs:
-                return "♣";
-            default:
-                return "";
+            deck.Remove(card);
         }
     }
 
-    public static string RankToString(Rank rank)
-    {
-        switch(rank)
-        {
-            case Rank.Ace:
-                return "A";
-            case Rank.Two:
-                return "2";
-            case Rank.Three:
-                return "3";
-            case Rank.Four:
-                return "4";
-            case Rank.Five:
-                return "5";
-            case Rank.Six:
-                return "6";
-            case Rank.Seven:
-                return "7";
-            case Rank.Eight:
-                return "8";
-            case Rank.Nine:
-                return "9";
-            case Rank.Ten:
-                return "10";
-            case Rank.Jack:
-                return "J";
-            case Rank.Queen:
-                return "Q";
-            case Rank.King:
-                return "K";
-            default:
-                return "";
-        }
-    }
-
-    public int CompareTo(object obj) {
-        // Rank is more important than suit
-        Card other = (Card)obj;
-        int rankComparison = Rank.CompareTo(other.Rank);
-        if (rankComparison == 0)
-        {
-            return Suit.CompareTo(other.Suit);
-        }
-        return rankComparison;
-    }
-}
-
-public enum Suit
-{
-    Spades=4,
-    Hearts=3,
-    Diamonds=2,
-    Clubs=1,
-}
-
-public enum Rank
-{
-    Ace = 14,
-    Two = 2,
-    Three = 3,
-    Four = 4,
-    Five = 5,
-    Six = 6,
-    Seven = 7,
-    Eight = 8,
-    Nine = 9,
-    Ten = 10,
-    Jack = 11,
-    Queen = 12,
-    King = 13,
-}
-
-public enum HandType
-{
-    HighCard,
-    Pair,
-    TwoPair,
-    ThreeOfAKind,
-    Straight,
-    Flush,
-    FullHouse,
-    FourOfAKind,
-    StraightFlush,
-    RoyalFlush
-}
-
-public enum StartingDeckType
-{
-    Standard,
-    NoFaceCards,
-    OnlyRedCards,
-    DoubleCardsBelow7,
-    Random,
 }
 
 public class GameController : MonoBehaviour
@@ -460,6 +345,19 @@ public class GameController : MonoBehaviour
         gameState.AddDiscards(relicInitialDiscards);
         UpdateUI();
     }
+
+    void OnAddCards(List<Card> cards)
+    {
+        gameState.AddCards(cards);
+        ResetGame(true);
+    }
+
+    void OnRemoveCards(List<Card> cards)
+    {
+        gameState.RemoveCards(cards);
+        ResetGame(true);
+    }
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -491,9 +389,23 @@ public class GameController : MonoBehaviour
             gameState.AddDiscards(relicDiscardsGainedPerSelect);
             UpdateUI();
         }
-        if (Input.GetKeyDown(KeyCode.DownArrow))
+        if (Input.GetKeyDown(KeyCode.Q))
         {
-            CardSelectorManager.Instance.InitCardSelection(gameState.Deck);
+            CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnAddCards);
+        }
+        if (Input.GetKeyDown(KeyCode.W))
+        {
+            // Generate random cards to add
+            List<Card> cards = new List<Card>();
+            for (int i = 0; i < 3; i++)
+            {
+                cards.Add(Card.RandomCard());
+            }
+            CardSelectorManager.Instance.InitCardSelection(cards, OnAddCards);
+        }
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnRemoveCards);
         }
         // If full, evaluate hand and flush selected cards
         if ((gameState.SelectedCards.Count == 7 || (Input.GetKeyDown(KeyCode.UpArrow) && gameState.SelectedCards.Count > 0)) && gameState.SubmitsLeft > 0)

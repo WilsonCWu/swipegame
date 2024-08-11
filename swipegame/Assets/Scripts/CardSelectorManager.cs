@@ -11,10 +11,12 @@ public class CardSelectorManager : MonoBehaviour
     private List<CardSelector> selectors = new List<CardSelector>();
     private static CardSelectorManager _instance;
     public static CardSelectorManager Instance { get { return _instance; } }
+    public Action<List<Card>> selectedCardsCallback;
 
 
-    public void InitCardSelection(List<Card> cards)
+    public void InitCardSelection(List<Card> cards, Action<List<Card>> selectedCardsCallback)
     {
+        this.selectedCardsCallback = selectedCardsCallback;
         foreach (Card card in cards)
         {
             CardSelector cardSelector = Instantiate(cardSelectorPrefab, cardSelectorParent);
@@ -28,7 +30,7 @@ public class CardSelectorManager : MonoBehaviour
     {
         List<Card> selectedCards = GetSelectedCardsAndClear();
         Debug.Log("Cards selected: " + CardUtils.CardsToString(selectedCards));
-        Debug.LogError("Implement this method");
+        selectedCardsCallback.Invoke(selectedCards);
     }
 
     private List<Card> GetSelectedCardsAndClear(){

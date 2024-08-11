@@ -385,3 +385,137 @@ public class CardUtils
         return new Tuple<HandType, List<Card>>(HandType.HighCard, new List<Card>());
     }
 }
+
+
+public class Card : IComparable
+{
+    public Suit Suit { get; }
+    public Rank Rank { get; }
+
+    public Card(Suit suit, Rank rank)
+    {
+        Suit = suit;
+        Rank = rank;
+    }
+
+    public override string ToString()
+    {
+        return SuitToString(Suit) + RankToString(Rank);
+    }
+
+    public static string SuitToString(Suit suit)
+    {
+        switch(suit)
+        {
+            case Suit.Spades:
+                return "♠";
+            case Suit.Hearts:
+                return "♥";
+            case Suit.Diamonds:
+                return "♦";
+            case Suit.Clubs:
+                return "♣";
+            default:
+                return "";
+        }
+    }
+
+    public static string RankToString(Rank rank)
+    {
+        switch(rank)
+        {
+            case Rank.Ace:
+                return "A";
+            case Rank.Two:
+                return "2";
+            case Rank.Three:
+                return "3";
+            case Rank.Four:
+                return "4";
+            case Rank.Five:
+                return "5";
+            case Rank.Six:
+                return "6";
+            case Rank.Seven:
+                return "7";
+            case Rank.Eight:
+                return "8";
+            case Rank.Nine:
+                return "9";
+            case Rank.Ten:
+                return "10";
+            case Rank.Jack:
+                return "J";
+            case Rank.Queen:
+                return "Q";
+            case Rank.King:
+                return "K";
+            default:
+                return "";
+        }
+    }
+
+    public int CompareTo(object obj) {
+        // Rank is more important than suit
+        Card other = (Card)obj;
+        int rankComparison = Rank.CompareTo(other.Rank);
+        if (rankComparison == 0)
+        {
+            return Suit.CompareTo(other.Suit);
+        }
+        return rankComparison;
+    }
+
+    public static Card RandomCard()
+    {
+        return new Card((Suit)UnityEngine.Random.Range(1, 5), (Rank)UnityEngine.Random.Range(2, 15));
+    }
+}
+
+public enum Suit
+{
+    Spades=4,
+    Hearts=3,
+    Diamonds=2,
+    Clubs=1,
+}
+
+public enum Rank
+{
+    Ace = 14,
+    Two = 2,
+    Three = 3,
+    Four = 4,
+    Five = 5,
+    Six = 6,
+    Seven = 7,
+    Eight = 8,
+    Nine = 9,
+    Ten = 10,
+    Jack = 11,
+    Queen = 12,
+    King = 13,
+}
+
+public enum HandType
+{
+    HighCard,
+    Pair,
+    TwoPair,
+    ThreeOfAKind,
+    Straight,
+    Flush,
+    FullHouse,
+    FourOfAKind,
+    StraightFlush,
+    RoyalFlush
+}
+
+public enum StartingDeckType
+{
+    Standard,
+    NoFaceCards,
+    OnlyRedCards,
+    DoubleCardsBelow7,
+    Random,
+}
