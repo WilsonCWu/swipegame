@@ -33,6 +33,11 @@ public class CardSelectorManager : MonoBehaviour
         selectedCardsCallback.Invoke(selectedCards);
     }
 
+    public void OnCancelClicked()
+    {
+        GetSelectedCardsAndClear();
+    }
+
     private List<Card> GetSelectedCardsAndClear(){
         List<Card> selectedCards = new List<Card>();
         foreach (CardSelector selector in selectors)
