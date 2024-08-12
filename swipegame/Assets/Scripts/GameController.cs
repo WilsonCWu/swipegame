@@ -9,14 +9,17 @@ using System;
 class RunState
 {
     private List<Card> deck;
-    private List<Card> forcedFlopCards;
-    private List<Relic> relics;
+    private List<Card> forcedFlopCards = new List<Card>();
+    private List<Relic> relics = new List<Relic>();
+    private Dictionary<HandType, int> handTypeLevel = new Dictionary<HandType, int>();
 
-    public RunState(List<Card> deck, List<Card> forcedFlopCards, List<Relic> relics)
+    public RunState(List<Card> deck)
     {
         this.deck = deck;
-        this.forcedFlopCards = forcedFlopCards;
-        this.relics = relics;
+        foreach (HandType handType in Enum.GetValues(typeof(HandType)))
+        {
+            handTypeLevel[handType] = 1;
+        }
     }
 
     public List<Card> Deck
@@ -55,6 +58,16 @@ class RunState
     public void AddRelic(Relic relic)
     {
         relics.Add(relic);
+    }
+
+    public int HandTypeLevel(HandType handType)
+    {
+        return handTypeLevel[handType];
+    }
+
+    public void LevelUpHandType(HandType handType)
+    {
+        handTypeLevel[handType]++;
     }
 }
 
@@ -252,6 +265,8 @@ class GameState
                 basePoints = 200;
                 break;
         }
+        // TODO better scaling
+        basePoints *= runState.HandTypeLevel(hand.handType);
         foreach (Relic relic in runState.Relics)
         {
             basePoints += relic.GetBasePoints(hand);
@@ -456,7 +471,7 @@ public class GameController : MonoBehaviour
     }
 
     void ResetGame(bool keepRunState = false){
-        RunState runState = keepRunState ? gameState.RunState : new RunState(CardUtils.InitializeDeck(startingDeckType), new List<Card>(), new List<Relic>());
+        RunState runState = keepRunState ? gameState.RunState : new RunState(CardUtils.InitializeDeck(startingDeckType));
         gameState = new GameState(relicFlopSize, relicSubmitLimit, relicFlopType, runState);
         gameState.DrawCard();
         gameState.AddDiscards(relicInitialDiscards);
@@ -488,6 +503,12 @@ public class GameController : MonoBehaviour
     void OnAddRelic(Relic relic)
     {
         gameState.RunState.AddRelic(relic);
+        ResetGame(true);
+    }
+
+    void OnLevelUpHandType(HandType handType)
+    {
+        gameState.RunState.LevelUpHandType(handType);
         ResetGame(true);
     }
 
@@ -553,6 +574,16 @@ public class GameController : MonoBehaviour
                 relics.Add(RelicUtils.RandomRelic());
             }
             RelicSelectorManager.Instance.InitRelicSelection(relics, OnAddRelic);
+        }
+        if (Input.GetKeyDown(KeyCode.H))
+        {
+            // Generate random relics to add
+            List<HandType> handTypes = new List<HandType>();
+            for (int i = 0; i < 3; i++)
+            {
+                handTypes.Add(Utils.RandomEnumValue<HandType>());
+            }
+            HandTypeSelectorManager.Instance.InitHandTypeSelection(handTypes, OnLevelUpHandType);
         }
         // If full, evaluate hand and flush selected cards
         if ((gameState.SelectedCards.Count == 7 || (Input.GetKeyDown(KeyCode.UpArrow) && gameState.SelectedCards.Count > 0)) && gameState.SubmitsLeft > 0)

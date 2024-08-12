@@ -75,7 +75,7 @@ public class CardUtils
             case StartingDeckType.Random:
                 for (int i = 0; i < 52; i++)
                 {
-                    deck.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), (Rank)UnityEngine.Random.Range(2, 15)));
+                    deck.Add(Card.RandomCard());
                 }
                 break;
         }
@@ -480,7 +480,7 @@ public class Card : IComparable
 
     public static Card RandomCard()
     {
-        return new Card((Suit)UnityEngine.Random.Range(1, 5), (Rank)UnityEngine.Random.Range(2, 15));
+        return new Card(Utils.RandomEnumValue<Suit>(), Utils.RandomEnumValue<Rank>());
     }
 }
 
