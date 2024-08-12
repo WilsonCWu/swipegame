@@ -143,7 +143,8 @@ class GameState
                 selectedCards.AddRange(runState.ForcedFlopCards);
                 // Generate a flop of size flopSize. Generate a random card from the draw pile
                 // and add it to the selected cards
-                for (int i = 0; i < flopSize-selectedCards.Count; i++)
+                int cardsToDraw = flopSize - selectedCards.Count;
+                for (int i = 0; i < cardsToDraw; i++)
                 {
                     selectedCards.Add(drawPile[UnityEngine.Random.Range(0, drawPile.Count)]);
                 }
@@ -375,6 +376,10 @@ public class GameController : MonoBehaviour
     public TextMeshProUGUI handTypeText;
     public TextMeshProUGUI pointsText;
     public TextMeshProUGUI submitsLeftText;
+    public TextMeshProUGUI handTypeLevelsText;
+    public TextMeshProUGUI relicsText;
+    public TextMeshProUGUI roundText;
+    public TextMeshProUGUI roundPointsText;
     public StartingDeckType startingDeckType;
     public FlopType relicFlopType;
     public int relicFlopSize;
@@ -468,6 +473,16 @@ public class GameController : MonoBehaviour
         discardsLeftText.text = "Discards Left: " + gameState.DiscardsLeft;
         pointsText.text = "Points: " + gameState.Points;
         submitsLeftText.text = "Submits Left: " + gameState.SubmitsLeft;
+        handTypeLevelsText.text = "";
+        foreach (HandType handType in Enum.GetValues(typeof(HandType)))
+        {
+            handTypeLevelsText.text += handType.ToString() + ": " + gameState.RunState.HandTypeLevel(handType) + "\n";
+        }
+        relicsText.text = "";
+        foreach (Relic relic in gameState.RunState.Relics)
+        {
+            relicsText.text += relic.ToString() + "\n";
+        }
     }
 
     void ResetGame(bool keepRunState = false){
