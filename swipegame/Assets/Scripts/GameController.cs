@@ -13,6 +13,7 @@ class RunState
     private List<Relic> relics = new List<Relic>();
     private Dictionary<HandType, int> handTypeLevel = new Dictionary<HandType, int>();
     private int round = 0;
+    private int coins = 0;
 
     public RunState(List<Card> deck)
     {
@@ -41,6 +42,11 @@ class RunState
     public int Round
     {
         get { return round; }
+    }
+
+    public int Coins
+    {
+        get { return coins; }
     }
 
     public void AddCards(List<Card> cards)
@@ -76,8 +82,9 @@ class RunState
         handTypeLevel[handType]++;
     }
     
-    public void IncrementRound()
+    public void IncrementRoundAndRewards()
     {
+        coins += 10;
         round++;
     }
 
@@ -396,6 +403,7 @@ public class GameController : MonoBehaviour
     public TextMeshProUGUI relicsText;
     public TextMeshProUGUI roundText;
     public TextMeshProUGUI roundPointsText;
+    public TextMeshProUGUI coinsText;
     public StartingDeckType startingDeckType;
     public FlopType relicFlopType;
     public int relicFlopSize;
@@ -501,6 +509,7 @@ public class GameController : MonoBehaviour
         }
         roundText.text = "RD: " + gameState.RunState.Round;
         roundPointsText.text = "Target Pts: " + gameState.RunState.GetTargetPoints();
+        coinsText.text = "Coins: " + gameState.RunState.Coins;
     }
 
     void ResetGame(bool keepRunState = false){
@@ -557,7 +566,7 @@ public class GameController : MonoBehaviour
     {
         if (gameState.Points >= gameState.RunState.GetTargetPoints())
         {
-            gameState.RunState.IncrementRound();
+            gameState.RunState.IncrementRoundAndRewards();
             ResetGame(true);
         }
         else if (gameState.SubmitsLeft == 0)
