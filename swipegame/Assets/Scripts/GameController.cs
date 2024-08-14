@@ -86,6 +86,13 @@ class RunState
     {
         coins += 10;
         round++;
+        // TODO: should wait for results to finish first
+        List<Reward> rewards = new List<Reward>();
+        for (int i = 0; i < 3; i++)
+        {
+            rewards.Add((Reward)UnityEngine.Random.Range(0, Enum.GetValues(typeof(Reward)).Length));
+        }
+        RewardSelectorManager.Instance.InitRewardSelection(rewards);
     }
 
     public int GetTargetPoints()
@@ -413,6 +420,8 @@ public class GameController : MonoBehaviour
     public int relicDiscardsGainedPerSubmit;
     public int relicDiscardsGainedPerSelect;
     private GameState gameState;
+    private static GameController _instance;
+    public static GameController Instance { get { return _instance; } }
 
 
     void UpdateUI()
@@ -554,6 +563,62 @@ public class GameController : MonoBehaviour
         ResetGame(true);
     }
 
+    public void TriggerReward(Reward reward)
+    {
+        switch (reward)
+        {
+            case Reward.AddCard:
+                // Generate random cards to add
+                List<Card> cards = new List<Card>();
+                for (int i = 0; i < 3; i++)
+                {
+                    cards.Add(Card.RandomCard());
+                }
+                CardSelectorManager.Instance.InitCardSelection(cards, OnAddCards);
+                break;
+            case Reward.RemoveCard:
+                CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnRemoveCards);
+                break;
+            case Reward.RandomRelic:
+                // Generate random relics to add
+                List<Relic> relics = new List<Relic>();
+                for (int i = 0; i < 3; i++)
+                {
+                    relics.Add(RelicUtils.RandomRelic());
+                }
+                RelicSelectorManager.Instance.InitRelicSelection(relics, OnAddRelic);
+                break;
+            case Reward.RandomHandLvl:
+                List<HandType> handTypes = new List<HandType>();
+                for (int i = 0; i < 3; i++)
+                {
+                    handTypes.Add(Utils.RandomEnumValue<HandType>());
+                }
+                HandTypeSelectorManager.Instance.InitHandTypeSelection(handTypes, OnLevelUpHandType);
+                break;
+            case Reward.ForcedFlopCard:
+                CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnAddForcedFlopCard);
+                break;
+            default:
+                Debug.LogError("Reward not implemented: " + reward);
+                break;
+        }
+    }
+
+
+    private void Awake()
+    {
+        if (_instance != null && _instance != this)
+        {
+            Debug.LogError("Destroying duplicate GameController");
+            Destroy(this.gameObject);
+        }
+        else
+        {
+            _instance = this;
+        }
+    }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -601,41 +666,23 @@ public class GameController : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.W))
         {
-            // Generate random cards to add
-            List<Card> cards = new List<Card>();
-            for (int i = 0; i < 3; i++)
-            {
-                cards.Add(Card.RandomCard());
-            }
-            CardSelectorManager.Instance.InitCardSelection(cards, OnAddCards);
+            TriggerReward(Reward.AddCard);
         }
         if (Input.GetKeyDown(KeyCode.E))
         {
-            CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnRemoveCards);
+            TriggerReward(Reward.RemoveCard);
         }
         if (Input.GetKeyDown(KeyCode.F))
         {
-            CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnAddForcedFlopCard);
+            TriggerReward(Reward.ForcedFlopCard);
         }
         if (Input.GetKeyDown(KeyCode.G))
         {
-            // Generate random relics to add
-            List<Relic> relics = new List<Relic>();
-            for (int i = 0; i < 3; i++)
-            {
-                relics.Add(RelicUtils.RandomRelic());
-            }
-            RelicSelectorManager.Instance.InitRelicSelection(relics, OnAddRelic);
+            TriggerReward(Reward.RandomRelic);
         }
         if (Input.GetKeyDown(KeyCode.H))
         {
-            // Generate random relics to add
-            List<HandType> handTypes = new List<HandType>();
-            for (int i = 0; i < 3; i++)
-            {
-                handTypes.Add(Utils.RandomEnumValue<HandType>());
-            }
-            HandTypeSelectorManager.Instance.InitHandTypeSelection(handTypes, OnLevelUpHandType);
+            TriggerReward(Reward.RandomHandLvl);
         }
         // If full, evaluate hand and flush selected cards
         if ((gameState.SelectedCards.Count == 7 || (Input.GetKeyDown(KeyCode.UpArrow) && gameState.SelectedCards.Count > 0)) && gameState.SubmitsLeft > 0)
@@ -651,4 +698,15 @@ public class GameController : MonoBehaviour
             UpdateUI();
         }
     }
+}
+
+
+
+public enum Reward
+{
+    AddCard,
+    RemoveCard,
+    RandomRelic,
+    RandomHandLvl,
+    ForcedFlopCard,
 }
