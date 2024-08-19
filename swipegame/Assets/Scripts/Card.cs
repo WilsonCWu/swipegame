@@ -412,7 +412,16 @@ public class Card : IComparable
 
     public override string ToString()
     {
-        return SuitToString(Suit) + RankToString(Rank);
+        string str =  SuitToString(Suit) + RankToString(Rank);
+        if (Suit == Suit.Clubs || Suit == Suit.Spades)
+        {
+            str = "<color=black>" + str + "</color>";
+        }
+        else
+        {
+            str = "<color=red>" + str + "</color>";
+        }
+        return str;
     }
 
     public static string SuitToString(Suit suit)
