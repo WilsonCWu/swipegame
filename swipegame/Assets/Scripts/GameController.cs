@@ -9,29 +9,30 @@ using System;
 class RunState
 {
     private List<Card> deck;
-    private List<Card> forcedFlopCards = new List<Card>();
     private List<Relic> relics = new List<Relic>();
     private Dictionary<HandType, int> handTypeLevel = new Dictionary<HandType, int>();
     private int round = 0;
     private int coins = 0;
+    private int curHandSize;
 
-    public RunState(List<Card> deck)
+    public RunState(List<Card> deck, int curHandSize)
     {
         this.deck = deck;
+        this.curHandSize = curHandSize;
         foreach (HandType handType in Enum.GetValues(typeof(HandType)))
         {
             handTypeLevel[handType] = 1;
         }
     }
 
+    public int CurHandSize
+    {
+        get { return curHandSize; }
+    }
+
     public List<Card> Deck
     {
         get { return deck; }
-    }
-
-    public List<Card> ForcedFlopCards
-    {
-        get { return forcedFlopCards; }
     }
 
     public List<Relic> Relics
@@ -60,11 +61,6 @@ class RunState
         {
             deck.Remove(card);
         }
-    }
-
-    public void AddForcedFlopCard(Card card)
-    {
-        forcedFlopCards.Add(card);
     }
 
     public void AddRelic(Relic relic)
@@ -105,163 +101,73 @@ class RunState
 class GameState
 {
     private RunState runState;
-    private List<Card> drawPile;
-    private Card curCard;
-    private List<Card> selectedCards;
+    private List<Card> pile;
     private int discardsLeft;
-    private int flopSize;
     private int points;
     private int submitsLeft;
-    private FlopType flopType;
-    private StartingDeckType startingDeckType;
 
-    public GameState(int flopSize, int submitsLeft, FlopType flopType, RunState runState)
+
+    public GameState(int submitsLeft, RunState runState)
     {
-        this.flopSize = flopSize;
         this.submitsLeft = submitsLeft;
-        this.flopType = flopType;
         this.runState = runState;
-        drawPile = new List<Card>(runState.Deck);
-        ShuffleDrawPile();
-        selectedCards = new List<Card>();
-        GenerateFlop();
+        pile = new List<Card>(runState.Deck);
+        ShufflePile();
     }
-    public void Discard(){
+    public void Discard(List<Card> cards){
         Assert.IsTrue(discardsLeft > 0);
         discardsLeft--;
-        DrawCard();
+        Remove(cards);
     }
+
+    private void Remove(List<Card> cards)
+    {
+        // TODO: assert cards valid
+        foreach (Card card in cards)
+        {
+            pile.Remove(card);
+        }
+    }
+
+    public void Submit(List<Card> cards)
+    {
+        Assert.IsTrue(submitsLeft > 0);
+        submitsLeft--;
+        Remove(cards);
+        EvaluateAndUpdatePoints(cards);
+    }
+
     public void AddDiscards(int numDiscards){
         discardsLeft += numDiscards;
     }
 
-    public void DrawCard()
-    {
-        if (drawPile.Count == 0)
-        {
-            Debug.Log("reshuffling the draw pile");
-            drawPile = new List<Card>(runState.Deck);
-            ShuffleDrawPile();
-        }
-        curCard = drawPile[drawPile.Count - 1];
-        drawPile.RemoveAt(drawPile.Count - 1);
-    }
-
-    public void SelectCurCard(){
-        selectedCards.Add(curCard);
-    }
-
-    public void ClearSelectedCards(){
-        selectedCards.Clear();
-    }
-
-    public void GenerateFlop(){
-        if (runState.ForcedFlopCards.Count > 0 && flopType != FlopType.FromDeck)
-        {
-            Debug.LogError("Warning: only supports FromDeck, changing floptype");
-            flopType = FlopType.FromDeck;
-        }
-        switch (flopType)
-        {
-            case FlopType.Standard:
-                for (int i = 0; i < flopSize; i++)
-                {
-                    selectedCards.Add(Card.RandomCard());
-                }
-                break;
-            case FlopType.FromDeck:
-                selectedCards.AddRange(runState.ForcedFlopCards);
-                // Generate a flop of size flopSize. Generate a random card from the draw pile
-                // and add it to the selected cards
-                int cardsToDraw = flopSize - selectedCards.Count;
-                for (int i = 0; i < cardsToDraw; i++)
-                {
-                    selectedCards.Add(drawPile[UnityEngine.Random.Range(0, drawPile.Count)]);
-                }
-                break;
-            case FlopType.NoFaceCards:
-                for (int i = 0; i < flopSize; i++)
-                {
-                    Card card = Card.RandomCard();
-                    while (card.Rank == Rank.Jack || card.Rank == Rank.Queen || card.Rank == Rank.King)
-                    {
-                        card = Card.RandomCard();
-                    }
-                    selectedCards.Add(card);
-                }
-                break;
-            case FlopType.OnlyRedCards:
-                for (int i = 0; i < flopSize; i++)
-                {
-                    Card card = Card.RandomCard();
-                    while (card.Suit == Suit.Clubs || card.Suit == Suit.Spades)
-                    {
-                        card = Card.RandomCard();
-                    }
-                    selectedCards.Add(card);
-                }
-                break;
-            case FlopType.OnlyConsecutive:
-                int startingRank = UnityEngine.Random.Range(1, 12);
-                if (startingRank == 1)
-                {
-                    selectedCards.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), Rank.Ace));
-                    selectedCards.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), Rank.Two));
-                    selectedCards.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), Rank.Three));
-                }
-                else
-                {
-                    selectedCards.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), (Rank)startingRank));
-                    selectedCards.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), (Rank)(startingRank + 1)));
-                    selectedCards.Add(new Card((Suit)UnityEngine.Random.Range(1, 5), (Rank)(startingRank + 2)));
-                }
-                break;
-        }
-    }
-
-    private void ShuffleDrawPile()
+    private void ShufflePile()
     {
         // Implement the logic to shuffle the drawPile list here
         // You can use the Fisher-Yates shuffle algorithm
-        for (int i = drawPile.Count - 1; i > 0; i--)
+        for (int i = pile.Count - 1; i > 0; i--)
         {
             int randomIndex = UnityEngine.Random.Range(0, i + 1);
-            Card temp = drawPile[i];
-            drawPile[i] = drawPile[randomIndex];
-            drawPile[randomIndex] = temp;
+            Card temp = pile[i];
+            pile[i] = pile[randomIndex];
+            pile[randomIndex] = temp;
         }
     }
     
 
     public override string ToString()
     {
-        string result = "Current Card: " + curCard.ToString() + ", ";
-        result += "\nSelected Cards: ";
-        foreach(Card card in selectedCards){
-            result += card.ToString() + ", ";
-        }
-        result += "\nDeck: ";
-        foreach (Card card in runState.ForcedFlopCards)
-        {
-            result += card.ToString() + ", ";
-        }
-        result += "\nDraw Pile: ";
-        foreach (Card card in drawPile)
-        {
-            result += card.ToString() + ", ";
-        }
+        string result = "Pile: " + CardUtils.CardsToString(pile);
         return result;
     }
 
 
-    public void EvaluateAndUpdatePoints()
+    private void EvaluateAndUpdatePoints(List<Card> cards)
     {
-        Assert.IsTrue(submitsLeft > 0);
-        submitsLeft--;
         // score = base points * handType multiplier
         // base points scale off of handType and cards in hand
         // multiplier scales off of handType
-        Hand hand = CardUtils.EvaluateHand(selectedCards);
+        Hand hand = CardUtils.EvaluateHand(cards);
         int basePoints = 0;
         switch (hand.handType)
         {
@@ -362,17 +268,13 @@ class GameState
         get { return points; }
     }
 
-    public Card CurCard
+    public List<Card> CurHand
     {
-        get { return curCard; }
-    }
-    public List<Card> SelectedCards
-    {
-        get { return selectedCards; }
+        get { return pile.GetRange(0, runState.CurHandSize); }
     }
     public List<Card> DrawPile
     {
-        get { return drawPile; }
+        get { return pile.GetRange(runState.CurHandSize, pile.Count- runState.CurHandSize); }
     }
     public int DiscardsLeft
     {
@@ -381,11 +283,6 @@ class GameState
     public List<Card> Deck
     {
         get { return runState.Deck; }
-    }
-
-    public List<Card> ForcedFlopCards
-    {
-        get { return runState.ForcedFlopCards; }
     }
 
     public RunState RunState
@@ -397,13 +294,10 @@ class GameState
 
 public class GameController : MonoBehaviour
 {
-    public TextMeshProUGUI curCardText;
-    public TextMeshProUGUI[] selectedCardTexts;
     public TextMeshProUGUI cardsLeftText;
     public TextMeshProUGUI drawPileContentsText;
     public TextMeshProUGUI countsLeftText;
     public TextMeshProUGUI discardsLeftText;
-    public TextMeshProUGUI handTypeText;
     public TextMeshProUGUI pointsText;
     public TextMeshProUGUI submitsLeftText;
     public TextMeshProUGUI handTypeLevelsText;
@@ -412,9 +306,8 @@ public class GameController : MonoBehaviour
     public TextMeshProUGUI roundPointsText;
     public TextMeshProUGUI coinsText;
     public StartingDeckType startingDeckType;
-    public FlopType relicFlopType;
-    public int relicFlopSize;
-    public int relicNumDrawSeeable;
+    public int relicMaxSelectable;
+    public int relicCurHandSize;
     public int relicInitialDiscards;
     public int relicSubmitLimit;
     public int relicDiscardsGainedPerSubmit;
@@ -426,44 +319,12 @@ public class GameController : MonoBehaviour
 
     void UpdateUI()
     {
-        curCardText.text = gameState.CurCard.ToString();
-        if (gameState.SelectedCards.Count != 0)
-        {
-            Hand bestHand = CardUtils.EvaluateHand(gameState.SelectedCards);
-            for (int i = 0; i < gameState.SelectedCards.Count; i++)
-            {
-                // if selectedCard is in bestHand, remove it from bestHand and color it
-                if (bestHand.cards.Contains(gameState.SelectedCards[i]))
-                {
-                    selectedCardTexts[i].text = "<color=green>" + gameState.SelectedCards[i].ToString() + "</color>";
-                    bestHand.cards.Remove(gameState.SelectedCards[i]);
-                }
-                else
-                {
-                    selectedCardTexts[i].text = gameState.SelectedCards[i].ToString();
-                }
-            }
-            handTypeText.text = bestHand.handType.ToString();
-        }
-        else{
-            handTypeText.text = "";
-        }
-        for (int i = gameState.SelectedCards.Count; i < selectedCardTexts.Length; i++)
-        {
-            selectedCardTexts[i].text = "";
-        }
         cardsLeftText.text = "Cards Left: " + gameState.DrawPile.Count;
         // update draw pile contents in sorted order. 
         // show the relicNumDrawSeeable number of cards, then show rest.
         // Note that we draw from the back of the draw pile
         drawPileContentsText.text = "";
         List<Card> sortedDrawPile = new List<Card>(gameState.DrawPile);
-        sortedDrawPile.Reverse();
-        for (int i = 0; i < relicNumDrawSeeable && i < sortedDrawPile.Count; i++)
-        {
-            drawPileContentsText.text += "<color=yellow>" + sortedDrawPile[i].ToString() + "</color>, ";
-        }
-        sortedDrawPile.RemoveRange(0, Mathf.Min(relicNumDrawSeeable, sortedDrawPile.Count));
         sortedDrawPile.Sort((a, b) =>
         {
             int rankComparison = a.Rank.CompareTo(b.Rank);
@@ -522,9 +383,9 @@ public class GameController : MonoBehaviour
     }
 
     void ResetGame(bool keepRunState = false){
-        RunState runState = keepRunState ? gameState.RunState : new RunState(CardUtils.InitializeDeck(startingDeckType));
-        gameState = new GameState(relicFlopSize, relicSubmitLimit, relicFlopType, runState);
-        gameState.DrawCard();
+        RunState runState = keepRunState ? gameState.RunState : new RunState(CardUtils.InitializeDeck(startingDeckType), relicCurHandSize);
+        gameState = new GameState(relicSubmitLimit, runState);
+        CurCardSelectorManager.Instance.InitSelection(gameState.CurHand, relicMaxSelectable);
         gameState.AddDiscards(relicInitialDiscards);
         UpdateUI();
     }
@@ -538,16 +399,6 @@ public class GameController : MonoBehaviour
     void OnRemoveCards(List<Card> cards)
     {
         gameState.RunState.RemoveCards(cards);
-        ResetGame(true);
-    }
-
-    void OnAddForcedFlopCard(List<Card> cards)
-    {
-        if (cards.Count != 1)
-        {
-            Debug.LogError("TODO: enforce card limit");
-        }
-        gameState.RunState.AddForcedFlopCard(cards[0]);
         ResetGame(true);
     }
 
@@ -596,13 +447,23 @@ public class GameController : MonoBehaviour
                 }
                 HandTypeSelectorManager.Instance.InitHandTypeSelection(handTypes, OnLevelUpHandType);
                 break;
-            case Reward.ForcedFlopCard:
-                CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnAddForcedFlopCard);
-                break;
             default:
                 Debug.LogError("Reward not implemented: " + reward);
                 break;
         }
+    }
+    public void OnDiscard(List<Card> cards)
+    {
+        gameState.Discard(cards);
+        CurCardSelectorManager.Instance.InitSelection(gameState.CurHand, relicMaxSelectable);
+        UpdateUI();
+    }
+
+    public void OnSubmit(List<Card> cards)
+    {
+        gameState.Submit(cards);
+        CurCardSelectorManager.Instance.InitSelection(gameState.CurHand, relicMaxSelectable);
+        UpdateUI();
     }
 
 
@@ -622,7 +483,6 @@ public class GameController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        Assert.IsTrue(selectedCardTexts.Length == 7);
         ResetGame();
     }
 
@@ -648,18 +508,6 @@ public class GameController : MonoBehaviour
         {
             ResetGame(true);
         }
-        if (Input.GetKeyDown(KeyCode.LeftArrow) && gameState.DiscardsLeft > 0)
-        {
-            gameState.Discard();
-            UpdateUI();
-        }
-        if (Input.GetKeyDown(KeyCode.RightArrow) && gameState.SelectedCards.Count < 7)
-        {
-            gameState.SelectCurCard();
-            gameState.DrawCard();
-            gameState.AddDiscards(relicDiscardsGainedPerSelect);
-            UpdateUI();
-        }
         if (Input.GetKeyDown(KeyCode.Q))
         {
             CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnAddCards);
@@ -672,10 +520,6 @@ public class GameController : MonoBehaviour
         {
             TriggerReward(Reward.RemoveCard);
         }
-        if (Input.GetKeyDown(KeyCode.F))
-        {
-            TriggerReward(Reward.ForcedFlopCard);
-        }
         if (Input.GetKeyDown(KeyCode.G))
         {
             TriggerReward(Reward.RandomRelic);
@@ -683,19 +527,6 @@ public class GameController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.H))
         {
             TriggerReward(Reward.RandomHandLvl);
-        }
-        // If full, evaluate hand and flush selected cards
-        if ((gameState.SelectedCards.Count == 7 || (Input.GetKeyDown(KeyCode.UpArrow) && gameState.SelectedCards.Count > 0)) && gameState.SubmitsLeft > 0)
-        {
-            // Evaluate hand
-            Debug.Log(gameState.ToString());
-            Debug.Log(CardUtils.HandToString(CardUtils.EvaluateHand(gameState.SelectedCards)));
-            // Flush selected cards
-            gameState.EvaluateAndUpdatePoints();
-            gameState.ClearSelectedCards();
-            gameState.AddDiscards(relicDiscardsGainedPerSubmit);
-            gameState.GenerateFlop();
-            UpdateUI();
         }
     }
 }
@@ -708,5 +539,4 @@ public enum Reward
     RemoveCard,
     RandomRelic,
     RandomHandLvl,
-    ForcedFlopCard,
 }
