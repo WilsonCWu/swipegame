@@ -9,7 +9,7 @@ public class CurCardSelectorManager : SelectorManager<Card>
     public static CurCardSelectorManager Instance { get { return _instance; } }
     public TextMeshProUGUI handTypeText;
 
-    public override void RefreshVisuals()
+    public override void RefreshUI()
     {
         List<Card> selectedCards = SelectedItems();
         if (selectedCards.Count > 0)
@@ -25,14 +25,14 @@ public class CurCardSelectorManager : SelectorManager<Card>
     public void OnSubmit()
     {
         List<Card> cards = SelectedItems();
-        Clear();
+        CloseAndClear();
         GameController.Instance.OnSubmit(cards);
     }
 
     public void OnDiscard()
     {
         List<Card> cards = SelectedItems();
-        Clear();
+        CloseAndClear();
         GameController.Instance.OnDiscard(cards);
     }
 

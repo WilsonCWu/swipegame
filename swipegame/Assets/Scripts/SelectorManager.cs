@@ -12,11 +12,11 @@ public abstract class SelectorManager<T> : MonoBehaviour
     private List<Selector<T>> selectors = new List<Selector<T>>();
     private int maxSelectable;
 
-
-    public abstract void RefreshVisuals();
+    // TODO: redeisgn. maybe pass selector?
+    public abstract void RefreshUI();
     public void InitSelection(List<T> items, int maxSelectable)
     {
-        Clear();
+        CloseAndClear();
         this.maxSelectable = maxSelectable;
         foreach (T item in items)
         {
@@ -24,7 +24,7 @@ public abstract class SelectorManager<T> : MonoBehaviour
             selector.Init(this, item);
             selectors.Add(selector);
         }
-        RefreshVisuals();
+        RefreshUI();
         SetVisible(true);
     }
 
@@ -61,10 +61,10 @@ public abstract class SelectorManager<T> : MonoBehaviour
             return;
         }
         selector.Selected = !selector.Selected;
-        RefreshVisuals();
+        RefreshUI();
     }
 
-    public void Clear()
+    public void CloseAndClear()
     {
         selectorObject.SetActive(false);
         foreach (Selector<T> selector in selectors)

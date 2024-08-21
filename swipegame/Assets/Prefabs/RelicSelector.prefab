@@ -453,3 +453,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   relicName: {fileID: 5810185857037663670}
   relicDescription: {fileID: 6037833901632689525}
+  selectedBG: {fileID: 0}

@@ -425,10 +425,10 @@ public class GameController : MonoBehaviour
                 {
                     cards.Add(Card.RandomCard());
                 }
-                CardSelectorManager.Instance.InitCardSelection(cards, OnAddCards);
+                CardSelectorManager.Instance.InitCardSelection(cards, 1, OnAddCards);
                 break;
             case Reward.RemoveCard:
-                CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnRemoveCards);
+                CardSelectorManager.Instance.InitCardSelection(gameState.Deck, 1, OnRemoveCards);
                 break;
             case Reward.RandomRelic:
                 // Generate random relics to add
@@ -510,7 +510,7 @@ public class GameController : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.Q))
         {
-            CardSelectorManager.Instance.InitCardSelection(gameState.Deck, OnAddCards);
+            CardSelectorManager.Instance.InitCardSelection(gameState.Deck, 1, OnAddCards);
         }
         if (Input.GetKeyDown(KeyCode.W))
         {

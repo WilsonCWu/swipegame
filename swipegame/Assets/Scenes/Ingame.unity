@@ -2353,8 +2353,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ffbe8e18cb54f45b19dc36e07138388c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  cardSelectorPrefab: {fileID: 1687649849773139284, guid: 6326dd0f6f6b2451382f9a186a6add86, type: 3}
-  cardSelectorParent: {fileID: 2110618174}
+  selectorPrefab: {fileID: 3534462840874386824, guid: 6022f9ec981884b5bbd8f29929861e67, type: 3}
+  selectorParent: {fileID: 2110618174}
   selectorObject: {fileID: 1338204687}
 --- !u!1 &655418410
 GameObject:
@@ -6912,7 +6912,7 @@ MonoBehaviour:
   m_ChildAlignment: 0
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 150, y: 300}
+  m_CellSize: {x: 250, y: 350}
   m_Spacing: {x: 50, y: 50}
   m_Constraint: 0
   m_ConstraintCount: 2

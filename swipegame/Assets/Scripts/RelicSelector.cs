@@ -2,45 +2,18 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using static UnityEditor.Progress;
 
-public class RelicSelector : MonoBehaviour
+public class RelicSelector : Selector<Relic>
 {
     public TextMeshProUGUI relicName;
     public TextMeshProUGUI relicDescription;
-    private bool selected = false;
-    Relic relic;
 
-    public Relic Relic
-    {
-        get { return relic; }
-    }
 
-    public bool Selected
+    public override void RefreshVisuals()
     {
-        get { return selected; }
-        set
-        {
-            selected = value;
-            if (selected)
-            {
-                relicName.color = Color.green;
-            }
-            else
-            {
-                relicName.color = Color.black;
-            }
-        }
-    }
-
-    public void Init(Relic relic)
-    {
-        this.relic = relic;
-        relicName.text = relic.Name();
-        relicDescription.text = relic.Description();
-    }
-
-    public void OnClicked()
-    {
-        Selected = !Selected;
+        relicName.text = Item.Name();
+        relicDescription.text = Item.Description();
+        relicName.color = Selected ? Color.green : Color.black;
     }
 }

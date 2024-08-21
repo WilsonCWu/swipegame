@@ -3,62 +3,37 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-// TODO: refactor and combine with cardselectorManager
-public class RelicSelectorManager : MonoBehaviour
+public class RelicSelectorManager : SelectorManager<Relic>
 {
-    public RelicSelector selectorPrefab;
-    public Transform selectorParent;
-    public GameObject selectorObject;
-    private List<RelicSelector> selectors = new List<RelicSelector>();
     private static RelicSelectorManager _instance;
     public static RelicSelectorManager Instance { get { return _instance; } }
     public Action<Relic> selectedRelicsCallback;
 
 
+    public override void RefreshUI()
+    {
+
+    }
+
     public void InitRelicSelection(List<Relic> relics, Action<Relic> selectedRelicsCallback)
     {
         this.selectedRelicsCallback = selectedRelicsCallback;
-        foreach (Relic relic in relics)
-        {
-            RelicSelector relicSelector = Instantiate(selectorPrefab, selectorParent);
-            relicSelector.Init(relic);
-            selectors.Add(relicSelector);
-        }
-        selectorObject.SetActive(true);
-    }
+        InitSelection(relics, 1);
 
+    }
     public void OnConfirmClicked()
     {
         // TODO
-        Relic selectedRelic = GetSelectedRelicsAndClear()[0];
+        Relic selectedRelic = SelectedItems()[0];
         Debug.Log("Relic selected: " + selectedRelic.Name());
         selectedRelicsCallback.Invoke(selectedRelic);
+        CloseAndClear();
     }
 
     public void OnCancelClicked()
     {
-        GetSelectedRelicsAndClear();
+        CloseAndClear();
     }
-
-    private List<Relic> GetSelectedRelicsAndClear()
-    {
-        List<Relic> selectedRelics = new List<Relic>();
-        foreach (RelicSelector selector in selectors)
-        {
-            if (selector.Selected)
-            {
-                selectedRelics.Add(selector.Relic);
-            }
-        }
-        selectorObject.SetActive(false);
-        foreach (RelicSelector selector in selectors)
-        {
-            Destroy(selector.gameObject);
-        }
-        selectors.Clear();
-        return selectedRelics;
-    }
-
 
     private void Awake()
     {
