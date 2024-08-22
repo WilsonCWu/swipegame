@@ -497,8 +497,8 @@ public enum Suit
 {
     Spades=4,
     Hearts=3,
-    Diamonds=2,
-    Clubs=1,
+    Clubs=2,
+    Diamonds = 1, // TODO: diamond lowest for color constrast
 }
 
 public enum Rank

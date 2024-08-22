@@ -56,5 +56,6 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "swipegame.sln"
+    "dotnet.defaultSolution": "swipegame.sln",
+    "dotnet.preferCSharpExtension": true
 }

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 public abstract class SelectorManager<T> : MonoBehaviour
 {
@@ -14,6 +15,15 @@ public abstract class SelectorManager<T> : MonoBehaviour
 
     // TODO: redeisgn. maybe pass selector?
     public abstract void RefreshUI();
+    public void ReorderSelectors(List<Selector<T>> selectors)
+    {
+        Assert.IsTrue(selectors.Count == this.selectors.Count);
+        this.selectors = selectors;
+        for (int i = 0; i < selectors.Count; ++i)
+        {
+            selectors[i].transform.SetSiblingIndex(i);
+        }
+    }
     public void InitSelection(List<T> items, int maxSelectable)
     {
         CloseAndClear();
@@ -26,6 +36,11 @@ public abstract class SelectorManager<T> : MonoBehaviour
         }
         RefreshUI();
         SetVisible(true);
+    }
+
+    public List<Selector<T>> Selectors
+    {
+        get { return selectors; }
     }
 
     public List<T> SelectedItems()
