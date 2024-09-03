@@ -1674,7 +1674,7 @@ MonoBehaviour:
   m_StartCorner: 0
   m_StartAxis: 0
   m_CellSize: {x: 250, y: 350}
-  m_Spacing: {x: 20, y: 20}
+  m_Spacing: {x: -20, y: 20}
   m_Constraint: 2
   m_ConstraintCount: 2
 --- !u!1 &519420028
@@ -2910,7 +2910,7 @@ MonoBehaviour:
   coinsText: {fileID: 398836248}
   startingDeckType: 0
   relicMaxSelectable: 5
-  relicCurHandSize: 8
+  relicCurHandSize: 10
   relicInitialDiscards: 3
   relicSubmitLimit: 5
   relicDiscardsGainedPerSubmit: 3
